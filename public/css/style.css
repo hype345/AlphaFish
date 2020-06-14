@@ -1,0 +1,15 @@
+.board {
+  width: 400px;
+  margin: auto;
+  margin-top: 100px;
+}
+
+.info {
+  width: 400px;
+  margin: auto;
+}
+
+.move-history {
+  max-height: 100px;
+  overflow-y: scroll;
+}
