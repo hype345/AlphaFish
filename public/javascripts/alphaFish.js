@@ -126,13 +126,13 @@ var getPieceValue = function (piece, x, y) {
 
 var minimaxRoot =function(depth, game, isMaximisingPlayer) {
 
-    var newGameMoves = game.moves();
+    var newGameMoves = game.ugly_moves();
     var bestMove = -9999;
     var bestMoveFound;
 
     for(var i = 0; i < newGameMoves.length; i++) {
         var newGameMove = newGameMoves[i]
-        game.move(newGameMove);
+        game.ugly_move(newGameMove);
         var value = minimax(depth - 1, game, -10000, 10000, !isMaximisingPlayer);
         game.undo();
         if(value >= bestMove) {
@@ -150,12 +150,12 @@ var minimax = function (depth, game, alpha, beta, isMaximisingPlayer) {
         return -evaluateBoard(game.board());
     }
 
-    var newGameMoves = game.moves();
+    var newGameMoves = game.ugly_moves();
 
     if (isMaximisingPlayer) {
         var bestMove = -9999;
         for (var i = 0; i < newGameMoves.length; i++) {
-            game.move(newGameMoves[i]);
+            game.ugly_move(newGameMoves[i]);
             bestMove = Math.max(bestMove, minimax(depth - 1, game, alpha, beta, !isMaximisingPlayer));
             game.undo();
             alpha = Math.max(alpha, bestMove);
@@ -167,7 +167,7 @@ var minimax = function (depth, game, alpha, beta, isMaximisingPlayer) {
     } else {
         var bestMove = 9999;
         for (var i = 0; i < newGameMoves.length; i++) {
-            game.move(newGameMoves[i]);
+            game.ugly_move(newGameMoves[i]);
             bestMove = Math.min(bestMove, minimax(depth - 1, game, alpha, beta, !isMaximisingPlayer));
             game.undo();
             beta = Math.min(beta, bestMove);
@@ -205,7 +205,7 @@ var getBestMove = function (game) {
 //making the move
 function makeOptimalMove () {
     var bestMove = getBestMove(game);
-    game.move(bestMove);
+    game.ugly_move(bestMove);
     board.position(game.fen());
     renderMoveHistory(game.history());
     if (game.game_over()) {
