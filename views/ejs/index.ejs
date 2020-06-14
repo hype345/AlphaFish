@@ -1,7 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
     <%- include ('./partials/head') %>
-<body>
+    <body id="scene1">
+        <button type="button" onclick="choseWhite()">Play as White</button>
+        <button type="button" onclick="choseBlack()">Play as Black</button>
+        <button type="button" onclick="choseAIvsAI()">Whatch AI vs AI</button>    
+    </body>
+    <body id ="scene2">
+    <div class="settings">
+        <button type="button" onclick="boardFlip()">Flip the Board</button>
+
+    </div>
     <div id="myBoard" class="board"></div>
 
     <div class="info">
