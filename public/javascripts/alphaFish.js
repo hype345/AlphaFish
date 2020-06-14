@@ -444,8 +444,8 @@ function AIvsAI()
 {
             
             function makeMove () {
-            renderMoveHistory(game.history());
             makeOptimalMove();
+            renderMoveHistory(game.history());
             WorB = !WorB;
             window.setTimeout(makeMove, 250)
         }
