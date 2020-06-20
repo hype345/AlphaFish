@@ -1354,6 +1354,29 @@ var Chess = function(fen) {
       },
   
       game_over: function() {
+
+        if(half_moves >= 100)
+        {
+          alert("draw by half moves");
+        }
+        if(in_checkmate())
+        {
+          alert("checkmate " + turn + " lost");
+        }
+        if(in_stalemate())
+        {
+          alert("draw by stalemate");
+        }
+        if(insufficient_material())
+        {
+          alert("draw by insufficient material");
+        }
+        if(in_threefold_repetition())
+        {
+          alert("draw by threefold repetition");
+        }
+
+
         return (
           half_moves >= 100 ||
           in_checkmate() ||

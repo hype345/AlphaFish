@@ -223,7 +223,17 @@ var getBestMove = function (game) {
     }
 
     positionCount = 0;
-    var depth = parseInt($('#search-depth').find(':selected').text());
+    var depth;
+
+
+    if(WorB == true)
+    {
+        depth = parseInt($('#search-depth-w').find(':selected').text());
+    }
+    if(WorB == false)
+    {
+        depth = parseInt($('#search-depth-b').find(':selected').text());
+    }
 
     var d = new Date().getTime();
     var bestMove = minimaxRoot(depth, game, true, WorB);
@@ -286,6 +296,9 @@ function playAsWhite()
             if (move === null) return 'snapback'
         
             renderMoveHistory(game.history());
+
+
+
             //makes best legal move for black
             window.setTimeout(makeOptimalMove, 250)
             }
