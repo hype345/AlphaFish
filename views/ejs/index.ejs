@@ -4,12 +4,25 @@
     <body id="scene1">
         <button type="button" onclick="choseWhite()">Play as White</button>
         <button type="button" onclick="choseBlack()">Play as Black</button>
-        <button type="button" onclick="choseAIvsAI()">Whatch AI vs AI</button>    
+        <button type="button" onclick="choseAIvsAI()">Whatch AI vs AI</button> 
+    </body>
+    <body>
+        White AI type:
+        <select id="whiteAI-type">
+            <option value="1" selected>stockfish</option>
+            <option value="2">alphazero</option>
+            <option value="3">random</option>
+        </select>
+        Black AI type:
+        <select id="blackAI-type">
+            <option value="1" selected>stockfish</option>
+            <option value="2">alphazero</option>
+            <option value="3">random</option>
+        </select>
     </body>
     <body id ="scene2">
     <div class="settings">
         <button type="button" onclick="boardFlip()">Flip the Board</button>
-
     </div>
     <div id="myBoard" class="board"></div>
 
@@ -33,12 +46,7 @@
         </select>
     
         <br>
-        <span>Positions evaluated: <span id="position-count"></span></span>
-        <br>
         <span>Time: <span id="time"></span></span>
-        <br>
-        <span>Positions/s: <span id="positions-per-s"></span> </span>
-        <br>
         <br>
         <div id="move-history" class="move-history">
         </div>
