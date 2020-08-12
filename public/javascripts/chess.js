@@ -1355,26 +1355,26 @@ var Chess = function(fen) {
   
       game_over: function() {
 
-        if(half_moves >= 100)
-        {
-          alert("draw by half moves");
-        }
-        if(in_checkmate())
-        {
-          alert("checkmate " + turn + " lost");
-        }
-        if(in_stalemate())
-        {
-          alert("draw by stalemate");
-        }
-        if(insufficient_material())
-        {
-          alert("draw by insufficient material");
-        }
-        if(in_threefold_repetition())
-        {
-          alert("draw by threefold repetition");
-        }
+        // if(half_moves >= 100)
+        // {
+        //   alert("draw by half moves");
+        // }
+        // if(in_checkmate())
+        // {
+        //   alert("checkmate " + turn + " lost");
+        // }
+        // if(in_stalemate())
+        // {
+        //   alert("draw by stalemate");
+        // }
+        // if(insufficient_material())
+        // {
+        //   alert("draw by insufficient material");
+        // }
+        // if(in_threefold_repetition())
+        // {
+        //   alert("draw by threefold repetition");
+        // }
 
 
         return (
@@ -1393,8 +1393,41 @@ var Chess = function(fen) {
       fen: function() {
         return generate_fen()
       },
-  
-      board: function() {
+
+     winner: function() {
+      var num;
+      if(half_moves >= 100)
+      {
+        num = -1
+      }
+      if(in_checkmate())
+      {
+        if(turn == 'b')
+        {
+          num = 1
+        }
+        else {
+          num = 0
+        }
+
+      }
+      if(in_stalemate())
+      {
+        num = -1
+      }
+      if(insufficient_material())
+      {
+       num = -1
+      }
+      if(in_threefold_repetition())
+      {
+        num = -1
+      }
+
+      return num
+     },
+
+    board: function() {
         var output = [],
           row = []
   
