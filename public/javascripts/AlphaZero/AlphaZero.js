@@ -149,6 +149,13 @@ class MCST
     {
         var time = 0
         var vaule = 0
+        try{
+            var nodeState = node.state
+        }
+        catch(err)
+        {
+            throw node
+        }
         var OriginalState = this.state.fen()
         var nodeState = node.state
         this.state.load(nodeState)
@@ -246,6 +253,26 @@ function choseAIvsAI()
 //AI
 var getBestMove = function (game) {
     if (game.game_over()) {
+        switch(game.winner()) {
+            case 1:
+              alert("White won by checkmate")
+              break;
+            case 0:
+                alert("Black won by checkmate")
+              break;
+            case -1:
+                alert("draw by half moves")
+              break;
+              case -2:
+                alert("draw by stalemate")
+              break;
+              case -3:
+                alert("draw by insufficient material")
+              break;
+              case -4:
+                alert("draw by three fold repetition")
+              break;
+          }
         return;
     }
 
@@ -253,7 +280,7 @@ var getBestMove = function (game) {
     // randomIdx = Math.floor(Math.random() * possibleMoves.length);
     // bestMove = possibleMoves[randomIdx]
     var myMCST = new MCST(2, 20)
-    var bestMove = myMCST.bestMove(game, 160, WorB)
+    var bestMove = myMCST.bestMove(game, 21, WorB)
     console.log(myMCST)
     return bestMove;
 };
@@ -286,7 +313,29 @@ function playAsWhite()
 {
     function onDragStart (source, piece, position, orientation) {
         // do not pick up pieces if the game is over
-        if (game.game_over()) return false
+        if (game.game_over()) {
+            switch(game.winner()) {
+                case 1:
+                  alert("White won by checkmate")
+                  break;
+                case 0:
+                    alert("Black won by checkmate")
+                  break;
+                case -1:
+                    alert("draw by half moves")
+                  break;
+                  case -2:
+                    alert("draw by stalemate")
+                  break;
+                  case -3:
+                    alert("draw by insufficient material")
+                  break;
+                  case -4:
+                    alert("draw by three fold repetition")
+                  break;
+              }
+            return;
+        }
         
         // only pick up pieces for White
         if (piece.search(/^b/) !== -1) return false
@@ -377,7 +426,29 @@ function playAsBlack()
 {
     function onDragStart (source, piece, position, orientation) {
         // do not pick up pieces if the game is over
-        if (game.game_over()) return false
+        if (game.game_over()) {
+            switch(game.winner()) {
+                case 1:
+                  alert("White won by checkmate")
+                  break;
+                case 0:
+                    alert("Black won by checkmate")
+                  break;
+                case -1:
+                    alert("draw by half moves")
+                  break;
+                  case -2:
+                    alert("draw by stalemate")
+                  break;
+                  case -3:
+                    alert("draw by insufficient material")
+                  break;
+                  case -4:
+                    alert("draw by three fold repetition")
+                  break;
+              }
+            return;
+        }
         
         // only pick up pieces for White
         if (piece.search(/^w/) !== -1) return false

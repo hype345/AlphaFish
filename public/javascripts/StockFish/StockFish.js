@@ -219,6 +219,26 @@ var minimax = function (depth, game, alpha, beta, isMaximisingPlayer, player) {
 var positionCount;
 var getBestMove = function (game) {
     if (game.game_over()) {
+        switch(game.winner()) {
+            case 1:
+              alert("White won by checkmate")
+              break;
+            case 0:
+                alert("Black won by checkmate")
+              break;
+            case -1:
+                alert("draw by half moves")
+              break;
+              case -2:
+                alert("draw by stalemate")
+              break;
+              case -3:
+                alert("draw by insufficient material")
+              break;
+              case -4:
+                alert("draw by three fold repetition")
+              break;
+          }
         return;
     }
 
@@ -276,7 +296,29 @@ function playAsWhite()
 {
     function onDragStart (source, piece, position, orientation) {
         // do not pick up pieces if the game is over
-        if (game.game_over()) return false
+        if (game.game_over()) {
+            switch(game.winner()) {
+                case 1:
+                  alert("White won by checkmate")
+                  break;
+                case 0:
+                    alert("Black won by checkmate")
+                  break;
+                case -1:
+                    alert("draw by half moves")
+                  break;
+                  case -2:
+                    alert("draw by stalemate")
+                  break;
+                  case -3:
+                    alert("draw by insufficient material")
+                  break;
+                  case -4:
+                    alert("draw by three fold repetition")
+                  break;
+              }
+            return;
+        }
         
         // only pick up pieces for White
         if (piece.search(/^b/) !== -1) return false
@@ -367,7 +409,29 @@ function playAsBlack()
 {
     function onDragStart (source, piece, position, orientation) {
         // do not pick up pieces if the game is over
-        if (game.game_over()) return false
+        if (game.game_over()) {
+            switch(game.winner()) {
+                case 1:
+                  alert("White won by checkmate")
+                  break;
+                case 0:
+                    alert("Black won by checkmate")
+                  break;
+                case -1:
+                    alert("draw by half moves")
+                  break;
+                  case -2:
+                    alert("draw by stalemate")
+                  break;
+                  case -3:
+                    alert("draw by insufficient material")
+                  break;
+                  case -4:
+                    alert("draw by three fold repetition")
+                  break;
+              }
+            return;
+        }
         
         // only pick up pieces for White
         if (piece.search(/^w/) !== -1) return false
