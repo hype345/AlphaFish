@@ -96,7 +96,7 @@ var getBestMove = function (game) {
             case 'alphazero':
                 var d = new Date().getTime();
                 var myMCST = new MCST(2, 20)
-                var bestMove = myMCST.bestMove(game, 100, WorB, 'max', false)
+                var bestMove = myMCST.bestMove(game, 100, WorB, 'robust', false)
                 console.log(myMCST)
                 var d2 = new Date().getTime();
                 var moveTime = (d2 - d);

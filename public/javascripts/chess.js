@@ -182,7 +182,7 @@ var Chess = function(fen) {
       ep_square = EMPTY
       half_moves = 0
       move_number = 1
-      history = []
+      // history = [] it did this to fix history being reset while loading fen but might break other stuff
       if (!keep_headers) header = {}
       comments = {}
       update_setup(generate_fen())
