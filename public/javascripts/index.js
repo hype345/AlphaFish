@@ -57,16 +57,7 @@ var getBestMove = function (game) {
         switch(choice)
         {
             case 'stockfish':
-                var depth;
-                if(WorB == true)
-                {
-                    depth = parseInt($('#search-depth-w').find(':selected').text());
-                }
-                if(WorB == false)
-                {
-                    depth = parseInt($('#search-depth-b').find(':selected').text());
-                }
-            
+                var depth = parseInt($('#search-depth-w').find(':selected').text());
                 var d = new Date().getTime();
                 var bestMove = minimaxRoot(depth, game, true, WorB);
                 var d2 = new Date().getTime();
@@ -76,7 +67,8 @@ var getBestMove = function (game) {
             case 'alphazero':
                 var d = new Date().getTime();
                 var myMCST = new MCST(2, 20)
-                var bestMove = myMCST.bestMove(game, 21, WorB)
+                var bestMove = myMCST.bestMove(game, 100, WorB, 'robust', false)
+                console.log(myMCST)
                 var d2 = new Date().getTime();
                 var moveTime = (d2 - d);
                 $('#time').text(moveTime/1000 + 's');
@@ -94,16 +86,7 @@ var getBestMove = function (game) {
         switch(choice)
         {
             case 'stockfish':
-                var depth;
-                if(WorB == true)
-                {
-                    depth = parseInt($('#search-depth-w').find(':selected').text());
-                }
-                if(WorB == false)
-                {
-                    depth = parseInt($('#search-depth-b').find(':selected').text());
-                }
-            
+                var depth = parseInt($('#search-depth-b').find(':selected').text());
                 var d = new Date().getTime();
                 var bestMove = minimaxRoot(depth, game, true, WorB);
                 var d2 = new Date().getTime();
@@ -113,7 +96,8 @@ var getBestMove = function (game) {
             case 'alphazero':
                 var d = new Date().getTime();
                 var myMCST = new MCST(2, 20)
-                var bestMove = myMCST.bestMove(game, 21, WorB)
+                var bestMove = myMCST.bestMove(game, 100, WorB, 'max', false)
+                console.log(myMCST)
                 var d2 = new Date().getTime();
                 var moveTime = (d2 - d);
                 $('#time').text(moveTime/1000 + 's');

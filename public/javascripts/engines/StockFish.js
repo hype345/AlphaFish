@@ -1,9 +1,9 @@
 //evuating the board
-var evaluateBoard = function (board) {
+var evaluateBoardStockFish = function (board) {
     var totalEvaluation = 0;
     for (var i = 0; i < 8; i++) {
         for (var j = 0; j < 8; j++) {
-            totalEvaluation = totalEvaluation + getPieceValue(board[i][j], i ,j);
+            totalEvaluation = totalEvaluation + getPieceValueStockFish(board[i][j], i ,j);
         }
     }
     return totalEvaluation;
@@ -92,7 +92,7 @@ var kingEvalWhite = [
 var kingEvalBlack = reverseArray(kingEvalWhite);
 
 
-var getPieceValue = function (piece, x, y) {
+var getPieceValueStockFish = function (piece, x, y) {
     if (piece === null) {
         return 0;
     }
@@ -141,12 +141,12 @@ var minimax = function (depth, game, alpha, beta, isMaximisingPlayer, player) {
     if(player == true)
     {
         if (depth === 0) {
-            return evaluateBoard(game.board());
+            return evaluateBoardStockFish(game.board());
         }
     }
     else{
         if (depth === 0) {
-            return -evaluateBoard(game.board());
+            return -evaluateBoardStockFish(game.board());
         }
     }
 

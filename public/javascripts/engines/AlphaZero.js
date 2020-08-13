@@ -1,21 +1,18 @@
-
-
-
 //evaulate board will be replaced later by NN
 
 //evuating the board
-var evaluateBoard = function (board) {
+var evaluateBoardAlphaZero = function (board) {
     var totalEvaluation = 0;
     for (var i = 0; i < 8; i++) {
         for (var j = 0; j < 8; j++) {
-            totalEvaluation = totalEvaluation + getPieceValue(board[i][j]);
+            totalEvaluation = totalEvaluation + getPieceValueAlphaZero(board[i][j]);
         }
     }
     return totalEvaluation;
 };
 
 
-var getPieceValue = function (piece) {
+var getPieceValueAlphaZero = function (piece) {
     if (piece === null) {
         return 0;
     }
@@ -64,10 +61,13 @@ class MCST_Node
         }
     }
     getUCB1(biasParam) {
-        // console.log("vaule: " + this.vaule)
-        // console.log("visits: " + this.visits)
-        // console.log("parents visits " + this.parent.visits)
-        return (this.vaule / this.visits) + biasParam * Math.sqrt(Math.log(this.parent.visits) / this.visits);
+        if(this.vaule < 0)
+        {
+            return (this.vaule / this.visits) - biasParam * Math.sqrt(Math.log(this.parent.visits) / this.visits);
+        }
+        else{
+            return (this.vaule / this.visits) + biasParam * Math.sqrt(Math.log(this.parent.visits) / this.visits);
+        }
       }
 }
 class MCST
@@ -91,40 +91,62 @@ class MCST
             this.state.undo()
         }
     }
-    select(node)
+    select(node, WorB, random)
     {
         var current = node
         if(current.isLeaf())
         {
             if(current.visits == 0)
             {
-                var vaule = this.rollout(current)
+                var vaule = this.rollout(current, random)
                 this.backpropigate(current, vaule)
             }
             else{
                 current = this.expand(current)
-                var vaule = this.rollout(current)
+                var vaule = this.rollout(current, random)
                 this.backpropigate(current, vaule)
             }
         }
         else{
             var bestChoice = null
-            var maxUCB1 = -Infinity
+
+            if(WorB)
+            {
+                var maxUCB1 = -Infinity
+                for(var i = 0; i < current.children.length; i++)
+                {
+                    var currentUCB1 = current.children[i].getUCB1(this.UCB1ExploreParam)
+    
+                    if(Number.isNaN(currentUCB1))
+                    {
+                        currentUCB1 = Infinity
+                    }
+                    if(currentUCB1 > maxUCB1)
+                    {
+                        maxUCB1 = currentUCB1
+                        bestChoice = current.children[i]
+                    }
+                }
+                this.select(bestChoice, WorB, random)
+            }
+            else{
+                var maxUCB1 = Infinity
             for(var i = 0; i < current.children.length; i++)
             {
                 var currentUCB1 = current.children[i].getUCB1(this.UCB1ExploreParam)
 
                 if(Number.isNaN(currentUCB1))
                 {
-                    currentUCB1 = Infinity
+                    currentUCB1 = -Infinity
                 }
-                if(currentUCB1 > maxUCB1)
+                if(currentUCB1 < maxUCB1)
                 {
                     maxUCB1 = currentUCB1
                     bestChoice = current.children[i]
                 }
             }
-            this.select(bestChoice)
+            this.select(bestChoice, WorB, random)
+            }
         }
 
     }
@@ -144,35 +166,54 @@ class MCST
         this.state.load(OriginalState)
         return node.children[possibleMoves.length-1]
     }
-    rollout(node)
+    rollout(node, random)
     {
-        var time = 0
-        var vaule = 0
-        try{
+        if(random)
+        {
+            var time = 0
+            var vaule = 0
+            try{
+                var nodeState = node.state
+            }
+            catch(err)
+            {
+                throw node
+            }
+            var OriginalState = this.state.fen()
             var nodeState = node.state
+            this.state.load(nodeState)
+            var d = new Date().getTime();
+            while(time < this.rolloutTimeLimit && this.state.game_over() == false)
+            {
+            var possibleMoves = this.state.ugly_moves()
+            var randomIdx = Math.floor(Math.random() * possibleMoves.length);
+            var bestMove = possibleMoves[randomIdx]
+            this.state.ugly_move(bestMove)
+            var d2 = new Date().getTime();
+            var time = (d2 - d);
+            }
+            // board = Chessboard('myBoard', 'start');
+            // board.position(this.state.fen());
+            vaule = evaluateBoardStockFish(this.state.board())
+            this.state.load(OriginalState)
+            return vaule
         }
-        catch(err)
-        {
-            throw node
+        else{
+            var vaule = 0
+            try{
+                var nodeState = node.state
+            }
+            catch(err)
+            {
+                throw node
+            }
+            var OriginalState = this.state.fen()
+            var nodeState = node.state
+            this.state.load(nodeState)
+            vaule = evaluateBoardStockFish(this.state.board())
+            this.state.load(OriginalState)
+            return vaule
         }
-        var OriginalState = this.state.fen()
-        var nodeState = node.state
-        this.state.load(nodeState)
-        var d = new Date().getTime();
-        while(time < this.rolloutTimeLimit && this.state.game_over() == false)
-        {
-        var possibleMoves = this.state.ugly_moves()
-        var randomIdx = Math.floor(Math.random() * possibleMoves.length);
-        var bestMove = possibleMoves[randomIdx]
-        this.state.ugly_move(bestMove)
-        var d2 = new Date().getTime();
-        var time = (d2 - d);
-        }
-        // board = Chessboard('myBoard', 'start');
-        // board.position(this.state.fen());
-        vaule = evaluateBoard(this.state.board())
-        this.state.load(OriginalState)
-        return vaule
     }
     backpropigate(node, vaule)
     {
@@ -189,36 +230,63 @@ class MCST
         }
 
     }
-    bestMove(state, iterations, WorB)
+    bestMove(state, iterations, WorB, type, random)
     {
         this.buildIntialTree(state)
         for(var i = 0; i < iterations; i++)
         {
-            this.select(this.root)
+            this.select(this.root, WorB, random)
         }
         var bestAction
+        var currentVaule        
         if(WorB)
         {
             var bestVaule = -Infinity
+            var bestVauleRobust = 0
             for(var j = 0; j < this.root.children.length; j++)
             {
-                var currentVaule = this.root.children[j].vaule/this.root.children[j].visits
-                if( currentVaule > bestVaule )
+                if(type == 'robust')
+                {
+                    var currentVaule = this.root.children[j].visits
+                    if( currentVaule > bestVauleRobust )
+                {
+                    bestVauleRobust = currentVaule
+                    bestAction = this.root.children[j].action
+                }
+                }
+                if(type == 'max')
+                {
+                    var currentVaule = this.root.children[j].vaule
+                    if( currentVaule > bestVaule )
                 {
                     bestVaule = currentVaule
                     bestAction = this.root.children[j].action
                 }
+                }
             }
         }
         else{
-            var bestVaule = Infinity
+            var bestVauleMax = Infinity
+            var bestVauleRobust = 0
             for(var j = 0; j < this.root.children.length; j++)
             {
-                var currentVaule = this.root.children[j].vaule/this.root.children[j].visits
-                if( currentVaule < bestVaule )
+                if(type == 'robust')
                 {
-                    bestVaule = currentVaule
+                    var currentVaule = this.root.children[j].visits
+                    if( currentVaule > bestVauleRobust )
+                {
+                    bestVauleRobust = currentVaule
                     bestAction = this.root.children[j].action
+                }
+                }
+                if(type == 'max')
+                {
+                    var currentVaule = this.root.children[j].vaule
+                    if( currentVaule < bestVauleMax )
+                {
+                    bestVauleMax = currentVaule
+                    bestAction = this.root.children[j].action
+                }
                 }
             }
         }
