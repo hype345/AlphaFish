@@ -18,17 +18,17 @@ var getPieceValueAlphaZero = function (piece) {
     }
     var getAbsoluteValue = function (piece) {
         if (piece.type === 'p') {
-            return 10
+            return 1
         } else if (piece.type === 'r') {
-            return 50
+            return 5
         } else if (piece.type === 'n') {
-            return 30
+            return 3
         } else if (piece.type === 'b') {
-            return 30
+            return 3
         } else if (piece.type === 'q') {
-            return 90
+            return 9
         } else if (piece.type === 'k') {
-            return 900
+            return 90
         }
         throw "Unknown piece type: " + piece.type;
     };
@@ -60,14 +60,18 @@ class MCST_Node
             return false
         }
     }
-    getUCB1(biasParam) {
-        if(this.vaule < 0)
+    getUCB1(biasParam, WorB) {
+        // console.log('vaule: ', this.vaule)
+        // console.log('visits: ', this.visits)
+        // console.log('parent visits: ', this.parent.visits)
+        if(WorB)
         {
-            return (this.vaule / this.visits) - biasParam * Math.sqrt(Math.log(this.parent.visits) / this.visits);
-        }
-        else{
             return (this.vaule / this.visits) + biasParam * Math.sqrt(Math.log(this.parent.visits) / this.visits);
         }
+        else{
+            return (this.vaule / this.visits) - biasParam * Math.sqrt(Math.log(this.parent.visits) / this.visits);
+        }
+        
       }
 }
 class MCST
@@ -101,22 +105,32 @@ class MCST
                 var vaule = this.rollout(current, random)
                 this.backpropigate(current, vaule)
             }
-            else{
+            else
+            {
                 current = this.expand(current)
                 var vaule = this.rollout(current, random)
                 this.backpropigate(current, vaule)
             }
         }
         else{
-            var bestChoice = null
+            var turn = current.state.split(' ')
+            turn = turn[1]
+            if(turn == 'w')
+            {
+            WorB = true
+            }
+            else{
+                WorB = false
+            }
 
             if(WorB)
             {
+                var bestChoice = null
                 var maxUCB1 = -Infinity
                 for(var i = 0; i < current.children.length; i++)
                 {
-                    var currentUCB1 = current.children[i].getUCB1(this.UCB1ExploreParam)
-    
+                    var currentUCB1 = current.children[i].getUCB1(this.UCB1ExploreParam, WorB)
+                    console.log(`w - node ${i}: ${currentUCB1}`)
                     if(Number.isNaN(currentUCB1))
                     {
                         currentUCB1 = Infinity
@@ -130,22 +144,23 @@ class MCST
                 this.select(bestChoice, WorB, random)
             }
             else{
-                var maxUCB1 = Infinity
-            for(var i = 0; i < current.children.length; i++)
-            {
-                var currentUCB1 = current.children[i].getUCB1(this.UCB1ExploreParam)
-
-                if(Number.isNaN(currentUCB1))
+                var bestChoice = null
+                var minUCB1 = Infinity
+                for(var i = 0; i < current.children.length; i++)
                 {
-                    currentUCB1 = -Infinity
+                    var currentUCB1 = current.children[i].getUCB1(this.UCB1ExploreParam, WorB)
+                    console.log(`b - node ${i}: ${currentUCB1}`)
+                    if(Number.isNaN(currentUCB1))
+                    {
+                        currentUCB1 = -Infinity
+                    }
+                    if(currentUCB1 < minUCB1)
+                    {
+                        minUCB1 = currentUCB1
+                        bestChoice = current.children[i]
+                    }
                 }
-                if(currentUCB1 < maxUCB1)
-                {
-                    maxUCB1 = currentUCB1
-                    bestChoice = current.children[i]
-                }
-            }
-            this.select(bestChoice, WorB, random)
+                this.select(bestChoice, WorB, random)
             }
         }
 
@@ -155,6 +170,13 @@ class MCST
         var OriginalState = this.state.fen()
         this.state.load(node.state)
         var possibleMoves = this.state.ugly_moves()
+        if(possibleMoves.length == 0)
+        {
+            console.log('expand failed off this state:')
+            console.log(node.state)
+            this.state.load(OriginalState)
+            return node
+        }
         for(var i = possibleMoves.length-1; i >= 0; i--)
         {
             this.state.ugly_move(possibleMoves[i])
@@ -172,13 +194,6 @@ class MCST
         {
             var time = 0
             var vaule = 0
-            try{
-                var nodeState = node.state
-            }
-            catch(err)
-            {
-                throw node
-            }
             var OriginalState = this.state.fen()
             var nodeState = node.state
             this.state.load(nodeState)
@@ -194,23 +209,16 @@ class MCST
             }
             // board = Chessboard('myBoard', 'start');
             // board.position(this.state.fen());
-            vaule = evaluateBoardStockFish(this.state.board())
+            vaule = evaluateBoardAlphaZero(this.state.board())
             this.state.load(OriginalState)
             return vaule
         }
         else{
             var vaule = 0
-            try{
-                var nodeState = node.state
-            }
-            catch(err)
-            {
-                throw node
-            }
             var OriginalState = this.state.fen()
             var nodeState = node.state
             this.state.load(nodeState)
-            vaule = evaluateBoardStockFish(this.state.board())
+            vaule = evaluateBoardAlphaZero(this.state.board())
             this.state.load(OriginalState)
             return vaule
         }

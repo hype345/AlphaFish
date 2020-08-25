@@ -1002,7 +1002,6 @@ var Chess = function(fen) {
   
       var us = turn
       var them = swap_color(turn)
-  
       board[move.from] = board[move.to]
       board[move.from].type = move.piece // to undo any promotions
       board[move.to] = null
@@ -1843,7 +1842,6 @@ var Chess = function(fen) {
       ugly_move: function(move_obj, options) {
         var pretty_move = make_pretty(move_obj);
         make_move(move_obj);
-
         return pretty_move;
     },
   
@@ -1902,10 +1900,37 @@ var Chess = function(fen) {
           }
           make_move(move)
         }
-  
         return move_history
       },
+      deepHistory: function(options) {
+        var reversed_history = []
+        var move_history = []
+        var verbose =
+          typeof options !== 'undefined' &&
+          'verbose' in options &&
+          options.verbose
   
+        while (history.length > 0) {
+          reversed_history.push(undo_move())
+        }
+  
+        while (reversed_history.length > 0) {
+          var move = reversed_history.pop()
+          move_history.push(move)
+          make_move(move)
+        }
+        return move_history
+      },
+      historyPop: function()
+      {
+        // undo_move()
+        // return 
+        return history.pop()
+      },
+      getBoard: function()
+      {
+       return board 
+      },
       get_comment: function() {
         return comments[generate_fen()];
       },
