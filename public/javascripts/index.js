@@ -66,7 +66,7 @@ var getBestMove = function (game) {
             case 'alphazero':
                 var d = new Date().getTime();
                 var myMCST = new MCST(2, 20)
-                var bestMove = myMCST.bestMove(game, 1600, WorB, 'max', false)
+                var bestMove = myMCST.bestMove(game, 1600, WorB, 'robust', false)
                 console.log('final')
                 console.log(myMCST)
                 var d2 = new Date().getTime();
@@ -96,7 +96,7 @@ var getBestMove = function (game) {
             case 'alphazero':
                 var d = new Date().getTime();
                 var myMCST = new MCST(2, 20)
-                var bestMove = myMCST.bestMove(game, 1600, WorB, 'max', false)
+                var bestMove = myMCST.bestMove(game, 1600, WorB, 'robust', false)
                 console.log('final')
                 console.log(myMCST)
                 var d2 = new Date().getTime();
@@ -376,6 +376,5 @@ function AIvsAI()
     //Util functions
     function boardFlip()
     {
-        console.log(game.getBoard())
         board.flip();
     }

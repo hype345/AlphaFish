@@ -130,7 +130,7 @@ class MCST
                 for(var i = 0; i < current.children.length; i++)
                 {
                     var currentUCB1 = current.children[i].getUCB1(this.UCB1ExploreParam, WorB)
-                    console.log(`w - node ${i}: ${currentUCB1}`)
+                    // console.log(`w - node ${i}: ${currentUCB1}`)
                     if(Number.isNaN(currentUCB1))
                     {
                         currentUCB1 = Infinity
@@ -149,7 +149,7 @@ class MCST
                 for(var i = 0; i < current.children.length; i++)
                 {
                     var currentUCB1 = current.children[i].getUCB1(this.UCB1ExploreParam, WorB)
-                    console.log(`b - node ${i}: ${currentUCB1}`)
+                    // console.log(`b - node ${i}: ${currentUCB1}`)
                     if(Number.isNaN(currentUCB1))
                     {
                         currentUCB1 = -Infinity
