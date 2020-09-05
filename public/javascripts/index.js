@@ -23,6 +23,15 @@ function choseAIvsAI()
 }
 
 
+function train()
+{
+    var myNNet = getModel(game.ugly_moves().length)
+    // myNNet.summary()
+    // trainModel(game, 1, myNNet)
+    trainModel(game, 1, myNNet)
+}
+
+
 //gets best move from AlphaZero
 var getBestMove = function (game) {
     if (game.game_over()) {

@@ -37,6 +37,230 @@ var getPieceValueAlphaZero = function (piece) {
     return piece.color === 'w' ? absoluteValue : -absoluteValue;
 };
 
+function getModel(actionSize) {
+    const input = tf.input({shape: [8,8,13]});
+
+    var x = tf.layers.conv2d({
+        filters: 256,
+        kernelSize: [3,3],
+        padding: 'same',
+        activation: 'linear'
+    }).apply(input)
+
+    x = tf.layers.batchNormalization({asix: 3}).apply(x);
+
+    x = tf.layers.activation({activation: 'relu'}).apply(x);
+
+    for(var i = 0; i < 4; i ++)
+    {
+        x = res_layer(x)
+    }
+      
+    var vaule_head = vauleHead(x)
+    var policy_head = policyHead(x, actionSize)
+
+    const model = tf.model({inputs: input, outputs: [vaule_head, policy_head]});
+
+
+    model.compile({
+        optimizer: tf.train.adam(0.001),
+        loss: [tf.metrics.categoricalCrossentropy ,tf.losses.meanSquaredError],
+        metrics: ['acc'],
+      });
+
+              return model
+  }
+
+  function conv_layer(x)
+  {
+    x = tf.layers.conv2d({
+        filters: 256,
+        kernelSize: [3,3],
+        padding: 'same',
+        activation: 'linear'
+    }).apply(x)
+
+    x = tf.layers.batchNormalization({asix: 3}).apply(x);
+
+    x = tf.layers.activation({activation: 'relu'}).apply(x);
+
+    return x
+  }
+  function res_layer(input_block)
+  {
+
+    x = conv_layer(input_block)
+
+    x = tf.layers.conv2d({
+        filters: 256,
+        kernelSize: [3,3],
+        padding: 'same',
+        activation: 'linear'
+    }).apply(x)
+
+    x = tf.layers.batchNormalization({asix: 3}).apply(x);
+
+    x = tf.layers.add().apply([input_block, x])
+
+    x = tf.layers.activation({activation: 'relu'}).apply(x);
+
+    return x
+
+  }
+  function vauleHead(x)
+  {
+    x = tf.layers.conv2d({
+        filters: 256,
+        kernelSize: [3,3],
+        padding: 'same',
+        activation: 'linear'
+    }).apply(x)
+
+    x = tf.layers.batchNormalization({asix: 3}).apply(x);
+
+    x = tf.layers.activation({activation: 'relu'}).apply(x);
+
+    x = tf.layers.flatten().apply(x)
+
+    x = tf.layers.dense({units: 256, activation: 'linear'}).apply(x)
+
+    x = tf.layers.activation({activation: 'relu'}).apply(x);
+
+    x = tf.layers.dense({units: 1, activation: 'tanh', name: 'vaule_head'}).apply(x)
+
+    return x
+
+  }
+  function policyHead(x, actionSize)
+  {
+    x = tf.layers.conv2d({
+        filters: 256,
+        kernelSize: [3,3],
+        padding: 'same',
+        activation: 'linear'
+    }).apply(x)
+
+    x = tf.layers.batchNormalization({asix: 3}).apply(x);
+
+    x = tf.layers.activation({activation: 'relu'}).apply(x);
+
+    x = tf.layers.flatten().apply(x)
+
+    x = tf.layers.dense({units: actionSize, activation: 'softmax', name: 'policy_head'}).apply(x)
+
+    return x
+
+  }
+
+  
+  async function trainModel(game, results, model)
+  {
+    var board = game.board()
+    var turn = game.turn()
+
+    //Input stack
+    //8 * 8 board with depth of 13 layers
+    //white pawn 0
+    // white rook 1
+    // white knight 2
+    // white bishup 3
+    // white queen 4 
+    // white king 5
+    // black pawn 6
+    // black rook 7 
+    // black knight 8
+    // black bishup 9
+    // black queen 10
+    // black king 11
+    // turn all 1s if whites turn all 0 if blacks turn 12
+
+    // Not added yet
+    // two layers for pepetition counters
+    // four castling layers
+    // total move count layer
+
+
+    var tensor = tf.zeros([8,8,13]).arraySync()
+
+    for (var i = 0; i < 8; i++) {
+        for (var j = 0; j < 8; j++) {
+            var piece = board[i][j];
+            if (piece === null) {
+                    //tensor[i][j][0]
+            }
+            else if (piece.type === 'p') {
+                if(piece.color === 'w')
+                {
+                    tensor[i][j][0] = 1;
+                }
+                else{
+                    tensor[i][j][6] = 1;
+                }
+            } else if (piece.type === 'r') {
+                if(piece.color === 'w')
+                {
+                    tensor[i][j][1] = 1;
+                }
+                else{
+                    tensor[i][j][7] = 1;
+                }
+            } else if (piece.type === 'n') {
+                if(piece.color === 'w')
+                {
+                    tensor[i][j][2] = 1;
+                }
+                else{
+                    tensor[i][j][8] = 1;
+                }
+            } else if (piece.type === 'b') {
+                if(piece.color === 'w')
+                {
+                    tensor[i][j][3] = 1;
+                }
+                else{
+                    tensor[i][j][9] = 1;
+                }
+            } else if (piece.type === 'q') {
+                if(piece.color === 'w')
+                {
+                    tensor[i][j][4] = 1;
+                }
+                else{
+                    tensor[i][j][10] = 1;
+                }
+            } else if (piece.type === 'k') {
+                if(piece.color === 'w')
+                {
+                    tensor[i][j][5] = 1;
+                }
+                else{
+                   tensor[i][j][11] = 1;
+                }
+            }
+
+        if(turn == 'w')
+        {
+            tensor[i][j][12] = 1;
+        }
+        }
+    }
+    x_train = tf.tensor([tensor])
+    // console.log(x_train.toString())
+    model.summary()
+
+    const metrics = ['loss', 'val_loss', 'acc', 'val_acc'];
+    const container = {name: 'Model Training', styles: { height: '1000px' }   };
+    const fitCallbacks = tfvis.show.fitCallbacks(container, metrics);
+
+
+      return await model.fit(x_train, [tf.ones([1]), tf.ones([1,game.ugly_moves().length])], {
+        batchSize: 1,
+        epochs: 10,
+        shuffle: true,
+        callbacks: fitCallbacks
+      });
+  }
+
 //for AI
 class MCST_Node
 {
