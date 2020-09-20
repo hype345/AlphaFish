@@ -23,12 +23,17 @@ function choseAIvsAI()
 }
 
 
-function train()
+async function train()
 {
-    var myNNet = getModel(game.ugly_moves().length)
+    var myNNet = getModel()
     // myNNet.summary()
-    // trainModel(game, 1, myNNet)
-    trainModel(game, 1, myNNet)
+    // await trainModel(game, 1, myNNet)
+    var output = await modelPredict(game, 'model_number_0')
+
+   var vaule = output[0]
+   var policy = output[1]
+   console.log(vaule.toString())
+   console.log(policy.toString())
 }
 
 

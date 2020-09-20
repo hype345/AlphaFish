@@ -1,5 +1,3 @@
-//evaulate board will be replaced later by NN
-
 //evuating the board
 var evaluateBoardAlphaZero = function (board) {
     var totalEvaluation = 0;
@@ -37,8 +35,8 @@ var getPieceValueAlphaZero = function (piece) {
     return piece.color === 'w' ? absoluteValue : -absoluteValue;
 };
 
-function getModel(actionSize) {
-    const input = tf.input({shape: [8,8,13]});
+function getModel() {
+    const input = tf.input({shape: [8,8,12]});
 
     var x = tf.layers.conv2d({
         filters: 256,
@@ -49,7 +47,7 @@ function getModel(actionSize) {
 
     x = tf.layers.batchNormalization({asix: 3}).apply(x);
 
-    x = tf.layers.activation({activation: 'relu'}).apply(x);
+    x = tf.layers.leakyReLU().apply(x);
 
     for(var i = 0; i < 4; i ++)
     {
@@ -57,7 +55,7 @@ function getModel(actionSize) {
     }
       
     var vaule_head = vauleHead(x)
-    var policy_head = policyHead(x, actionSize)
+    var policy_head = policyHead(x, 64) // rn it is 64 so probability of piece to move instead of probalitlity of accual move which would be 4672 but I cant train that with current reasources
 
     const model = tf.model({inputs: input, outputs: [vaule_head, policy_head]});
 
@@ -82,7 +80,7 @@ function getModel(actionSize) {
 
     x = tf.layers.batchNormalization({asix: 3}).apply(x);
 
-    x = tf.layers.activation({activation: 'relu'}).apply(x);
+    x = tf.layers.leakyReLU().apply(x);
 
     return x
   }
@@ -102,7 +100,7 @@ function getModel(actionSize) {
 
     x = tf.layers.add().apply([input_block, x])
 
-    x = tf.layers.activation({activation: 'relu'}).apply(x);
+    x = tf.layers.leakyReLU().apply(x);
 
     return x
 
@@ -118,13 +116,13 @@ function getModel(actionSize) {
 
     x = tf.layers.batchNormalization({asix: 3}).apply(x);
 
-    x = tf.layers.activation({activation: 'relu'}).apply(x);
+    x = tf.layers.leakyReLU().apply(x);
 
     x = tf.layers.flatten().apply(x)
 
     x = tf.layers.dense({units: 256, activation: 'linear'}).apply(x)
 
-    x = tf.layers.activation({activation: 'relu'}).apply(x);
+    x = tf.layers.leakyReLU().apply(x);
 
     x = tf.layers.dense({units: 1, activation: 'tanh', name: 'vaule_head'}).apply(x)
 
@@ -142,7 +140,7 @@ function getModel(actionSize) {
 
     x = tf.layers.batchNormalization({asix: 3}).apply(x);
 
-    x = tf.layers.activation({activation: 'relu'}).apply(x);
+    x = tf.layers.leakyReLU().apply(x);
 
     x = tf.layers.flatten().apply(x)
 
@@ -152,14 +150,13 @@ function getModel(actionSize) {
 
   }
 
-  
-  async function trainModel(game, results, model)
+  function createGameState(game) //rn the state has no history but could try adding hisotry but to save reasourses trying without a history
   {
     var board = game.board()
     var turn = game.turn()
 
     //Input stack
-    //8 * 8 board with depth of 13 layers
+    //8 * 8 board with depth of 12 layers
     //white pawn 0
     // white rook 1
     // white knight 2
@@ -172,93 +169,196 @@ function getModel(actionSize) {
     // black bishup 9
     // black queen 10
     // black king 11
-    // turn all 1s if whites turn all 0 if blacks turn 12
+
+    // turn all 1s if whites turn all 0 if blacks turn 12 -- removed now just alway have current player as white
 
     // Not added yet
+    //two layers for repeitions
     // two layers for pepetition counters
     // four castling layers
     // total move count layer
+    //no progress count -not sure what this is
 
 
-    var tensor = tf.zeros([8,8,13]).arraySync()
+    var tensor = tf.zeros([8,8,12]).arraySync()
 
     for (var i = 0; i < 8; i++) {
         for (var j = 0; j < 8; j++) {
             var piece = board[i][j];
-            if (piece === null) {
-                    //tensor[i][j][0]
-            }
-            else if (piece.type === 'p') {
-                if(piece.color === 'w')
-                {
-                    tensor[i][j][0] = 1;
-                }
-                else{
-                    tensor[i][j][6] = 1;
-                }
-            } else if (piece.type === 'r') {
-                if(piece.color === 'w')
-                {
-                    tensor[i][j][1] = 1;
-                }
-                else{
-                    tensor[i][j][7] = 1;
-                }
-            } else if (piece.type === 'n') {
-                if(piece.color === 'w')
-                {
-                    tensor[i][j][2] = 1;
-                }
-                else{
-                    tensor[i][j][8] = 1;
-                }
-            } else if (piece.type === 'b') {
-                if(piece.color === 'w')
-                {
-                    tensor[i][j][3] = 1;
-                }
-                else{
-                    tensor[i][j][9] = 1;
-                }
-            } else if (piece.type === 'q') {
-                if(piece.color === 'w')
-                {
-                    tensor[i][j][4] = 1;
-                }
-                else{
-                    tensor[i][j][10] = 1;
-                }
-            } else if (piece.type === 'k') {
-                if(piece.color === 'w')
-                {
-                    tensor[i][j][5] = 1;
-                }
-                else{
-                   tensor[i][j][11] = 1;
-                }
-            }
-
         if(turn == 'w')
         {
-            tensor[i][j][12] = 1;
+            // console.log('white to move')
+                if (piece === null) {
+                //tensor[i][j][0]
+                    }
+                else if (piece.type === 'p') {
+                    if(piece.color === 'w')
+                    {
+                        tensor[i][j][0] = 1;
+                    }
+                    else{
+                        tensor[i][j][6] = 1;
+                    }
+                } else if (piece.type === 'r') {
+                    if(piece.color === 'w')
+                    {
+                        tensor[i][j][1] = 1;
+                    }
+                    else{
+                        tensor[i][j][7] = 1;
+                    }
+                } else if (piece.type === 'n') {
+                    if(piece.color === 'w')
+                    {
+                        tensor[i][j][2] = 1;
+                    }
+                    else{
+                        tensor[i][j][8] = 1;
+                    }
+                } else if (piece.type === 'b') {
+                    if(piece.color === 'w')
+                    {
+                        tensor[i][j][3] = 1;
+                    }
+                    else{
+                        tensor[i][j][9] = 1;
+                    }
+                } else if (piece.type === 'q') {
+                    if(piece.color === 'w')
+                    {
+                        tensor[i][j][4] = 1;
+                    }
+                    else{
+                        tensor[i][j][10] = 1;
+                    }
+                } else if (piece.type === 'k') {
+                    if(piece.color === 'w')
+                    {
+                        tensor[i][j][5] = 1;
+                    }
+                    else{
+                       tensor[i][j][11] = 1;
+                    }
+                }
         }
+        if(turn == 'b')
+        {
+            // console.log('black to move')
+            if (piece === null) {
+                //tensor[i][j][0]
+                    }
+                else if (piece.type === 'p') {
+                    if(piece.color === 'w')
+                    {
+                        tensor[i][j][6] = 1;
+                    }
+                    else{
+                        tensor[i][j][0] = 1;
+                    }
+                } else if (piece.type === 'r') {
+                    if(piece.color === 'w')
+                    {
+                        tensor[i][j][7] = 1;
+                    }
+                    else{
+                        tensor[i][j][1] = 1;
+                    }
+                } else if (piece.type === 'n') {
+                    if(piece.color === 'w')
+                    {
+                        tensor[i][j][8] = 1;
+                    }
+                    else{
+                        tensor[i][j][2] = 1;
+                    }
+                } else if (piece.type === 'b') {
+                    if(piece.color === 'w')
+                    {
+                        tensor[i][j][9] = 1;
+                    }
+                    else{
+                        tensor[i][j][3] = 1;
+                    }
+                } else if (piece.type === 'q') {
+                    if(piece.color === 'w')
+                    {
+                        tensor[i][j][10] = 1;
+                    }
+                    else{
+                        tensor[i][j][4] = 1;
+                    }
+                } else if (piece.type === 'k') {
+                    if(piece.color === 'w')
+                    {
+                        tensor[i][j][11] = 1;
+                    }
+                    else{
+                       tensor[i][j][5] = 1;
+                    }
+                }   
         }
     }
-    x_train = tf.tensor([tensor])
+  }
+  var stackedState = tf.tensor(tensor)
+
+  return stackedState
+  }
+
+  
+  async function trainModel(game, results, model)
+  {
+
+    var input = []
+
+    input.push(createGameState(game).arraySync())
+
+    var x_train = tf.tensor(input)
+
     // console.log(x_train.toString())
-    model.summary()
+
+    
+    // console.log(x_train.toString())
+    // model.summary()
 
     const metrics = ['loss', 'val_loss', 'acc', 'val_acc'];
     const container = {name: 'Model Training', styles: { height: '1000px' }   };
     const fitCallbacks = tfvis.show.fitCallbacks(container, metrics);
 
 
-      return await model.fit(x_train, [tf.ones([1]), tf.ones([1,game.ugly_moves().length])], {
+     await model.fit(x_train, [tf.ones([1]), tf.ones([1,64])], {
         batchSize: 1,
         epochs: 10,
         shuffle: true,
         callbacks: fitCallbacks
       });
+
+      var modelNumber = 0;
+
+      var name = 'model_number_' + modelNumber
+
+      const saveResults = await model.save(`indexeddb://${name}`);
+      console.log('model saved as ' + name)
+    //   const loadedModel = await tf.loadLayersModel('indexeddb://my-model');
+    //   console.log('loaded model')
+    //   console.log(await loadedModel.predict(x_train))
+      
+  }
+
+  async function modelPredict(input, modelName)
+  {
+     const loadedModel = await tf.loadLayersModel(`indexeddb://${modelName}`);
+     console.log('loaded model called ' + modelName)
+
+     var predictionData = []
+     predictionData.push(createGameState(input).arraySync())
+
+     var finalInput = tf.tensor(predictionData)
+
+    //  console.log(finalInput.toString())
+
+    var output = await loadedModel.predict(finalInput)
+
+    return output
   }
 
 //for AI
