@@ -25,10 +25,13 @@ function choseAIvsAI()
 
 async function train()
 {
-    var myNNet = getModel()
+    // var myNNet = getModel()
     // myNNet.summary()
     // await trainModel(game, 1, myNNet)
-    var output = await modelPredict(game, 'model_number_0')
+    const loadedModel = await tf.loadLayersModel(`indexeddb://model_number_0`);
+    console.log('loaded model')
+
+    var output = await modelPredict(game, loadedModel)
 
    var vaule = output[0]
    var policy = output[1]
@@ -38,7 +41,7 @@ async function train()
 
 
 //gets best move from AlphaZero
-var getBestMove = function (game) {
+var getBestMove = async function (game) {
     if (game.game_over()) {
         switch(game.winner()) {
             case 1:
@@ -79,7 +82,7 @@ var getBestMove = function (game) {
                 return bestMove;
             case 'alphazero':
                 var d = new Date().getTime();
-                var myMCST = new MCST(2, 20)
+                var myMCST = await buildMCST(2, 20, 'model_number_0')
                 var bestMove = myMCST.bestMove(game, 1600, WorB, 'robust', false)
                 console.log('final')
                 console.log(myMCST)
@@ -109,7 +112,7 @@ var getBestMove = function (game) {
                 return bestMove;
             case 'alphazero':
                 var d = new Date().getTime();
-                var myMCST = new MCST(2, 20)
+                var myMCST = await buildMCST(2, 20, 'model_number_0')
                 var bestMove = myMCST.bestMove(game, 1600, WorB, 'robust', false)
                 console.log('final')
                 console.log(myMCST)
@@ -127,8 +130,8 @@ var getBestMove = function (game) {
 }
 
 //making the move on the board
-function makeOptimalMove () {
-    var bestMove = getBestMove(game);
+async function makeOptimalMove () {
+    var bestMove = await getBestMove(game);
     game.ugly_move(bestMove);
     board.position(game.fen());
     renderMoveHistory(game.history());

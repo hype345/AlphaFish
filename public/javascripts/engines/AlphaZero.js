@@ -344,11 +344,8 @@ function getModel() {
       
   }
 
-  async function modelPredict(input, modelName)
+  async function modelPredict(input, model)
   {
-     const loadedModel = await tf.loadLayersModel(`indexeddb://${modelName}`);
-     console.log('loaded model called ' + modelName)
-
      var predictionData = []
      predictionData.push(createGameState(input).arraySync())
 
@@ -356,7 +353,7 @@ function getModel() {
 
     //  console.log(finalInput.toString())
 
-    var output = await loadedModel.predict(finalInput)
+    var output = await model.predict(finalInput)
 
     return output
   }
@@ -398,12 +395,30 @@ class MCST_Node
         
       }
 }
+
+async function buildMCST(UCB1ExploreParam, rolloutTimeLimit, modelName)
+{
+    const model = await tf.loadLayersModel(`indexeddb://${modelName}`);
+    if(model != undefined)
+    {
+        console.log('loaded model' + modelName)
+    }
+    else
+    {
+        console.log('failed to load model ' + modelName)
+    }
+
+    // model.summary()
+
+    return new MCST(UCB1ExploreParam, rolloutTimeLimit, model)
+}
 class MCST
 {
-    constructor(UCB1ExploreParam, rolloutTimeLimit)
+    constructor(UCB1ExploreParam, rolloutTimeLimit, model)
     {
         this.UCB1ExploreParam = UCB1ExploreParam
         this.rolloutTimeLimit = rolloutTimeLimit
+        this.model = model
     }
     buildIntialTree(state)
     {
@@ -543,6 +558,11 @@ class MCST
             var nodeState = node.state
             this.state.load(nodeState)
             vaule = evaluateBoardAlphaZero(this.state.board())
+
+            // var output = await modelPredict(game, this.model)
+            // var vauleTest = output[0]
+            // console.log(vauleTest.toString())
+
             this.state.load(OriginalState)
             return vaule
         }
