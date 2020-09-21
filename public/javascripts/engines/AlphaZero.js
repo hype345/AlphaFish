@@ -381,13 +381,20 @@ class MCST_Node
             return false
         }
     }
-    getUCB1(biasParam, WorB) {
+    async getUCB1(biasParam, WorB, model) {
         // console.log('vaule: ', this.vaule)
         // console.log('visits: ', this.visits)
         // console.log('parent visits: ', this.parent.visits)
+
+        var output = await modelPredict(game, model)
+
+        var policyArry = output[1].arraySync()
+
+        // console.log(policyArry[0][this.action.from])
+
         if(WorB)
         {
-            return (this.vaule / this.visits) + biasParam * Math.sqrt(Math.log(this.parent.visits) / this.visits);
+            return (this.vaule / this.visits) + biasParam * policyArry[0][this.action.from] * Math.sqrt(Math.log(this.parent.visits) / this.visits);
         }
         else{
             return (this.vaule / this.visits) - biasParam * Math.sqrt(Math.log(this.parent.visits) / this.visits);
@@ -434,20 +441,20 @@ class MCST
             this.state.undo()
         }
     }
-    select(node, WorB, random)
+    async select(node, WorB, random)
     {
         var current = node
         if(current.isLeaf())
         {
             if(current.visits == 0)
             {
-                var vaule = this.rollout(current, random)
+                var vaule = await this.rollout(current, random)
                 this.backpropigate(current, vaule)
             }
             else
             {
                 current = this.expand(current)
-                var vaule = this.rollout(current, random)
+                var vaule = await this.rollout(current, random)
                 this.backpropigate(current, vaule)
             }
         }
@@ -468,7 +475,7 @@ class MCST
                 var maxUCB1 = -Infinity
                 for(var i = 0; i < current.children.length; i++)
                 {
-                    var currentUCB1 = current.children[i].getUCB1(this.UCB1ExploreParam, WorB)
+                    var currentUCB1 = await current.children[i].getUCB1(this.UCB1ExploreParam, WorB, this.model)
                     // console.log(`w - node ${i}: ${currentUCB1}`)
                     if(Number.isNaN(currentUCB1))
                     {
@@ -480,14 +487,14 @@ class MCST
                         bestChoice = current.children[i]
                     }
                 }
-                this.select(bestChoice, WorB, random)
+                await this.select(bestChoice, WorB, random)
             }
             else{
                 var bestChoice = null
                 var minUCB1 = Infinity
                 for(var i = 0; i < current.children.length; i++)
                 {
-                    var currentUCB1 = current.children[i].getUCB1(this.UCB1ExploreParam, WorB)
+                    var currentUCB1 = await current.children[i].getUCB1(this.UCB1ExploreParam, WorB, this.model)
                     // console.log(`b - node ${i}: ${currentUCB1}`)
                     if(Number.isNaN(currentUCB1))
                     {
@@ -499,7 +506,7 @@ class MCST
                         bestChoice = current.children[i]
                     }
                 }
-                this.select(bestChoice, WorB, random)
+                await this.select(bestChoice, WorB, random)
             }
         }
 
@@ -527,7 +534,7 @@ class MCST
         this.state.load(OriginalState)
         return node.children[possibleMoves.length-1]
     }
-    rollout(node, random)
+    async rollout(node, random)
     {
         if(random)
         {
@@ -557,11 +564,12 @@ class MCST
             var OriginalState = this.state.fen()
             var nodeState = node.state
             this.state.load(nodeState)
-            vaule = evaluateBoardAlphaZero(this.state.board())
+            // vaule = evaluateBoardAlphaZero(this.state.board()) non NN vaule function
 
-            // var output = await modelPredict(game, this.model)
-            // var vauleTest = output[0]
-            // console.log(vauleTest.toString())
+            var output = await modelPredict(game, this.model)
+            var outputArry = output[0].arraySync()
+            // console.log(outputArry[0][0])
+            vaule = outputArry[0][0];
 
             this.state.load(OriginalState)
             return vaule
@@ -582,12 +590,12 @@ class MCST
         }
 
     }
-    bestMove(state, iterations, WorB, type, random)
+    async bestMove(state, iterations, WorB, type, random)
     {
         this.buildIntialTree(state)
         for(var i = 0; i < iterations; i++)
         {
-            this.select(this.root, WorB, random)
+            await this.select(this.root, WorB, random)
         }
         var bestAction
         var currentVaule        

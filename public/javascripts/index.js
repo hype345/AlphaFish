@@ -25,18 +25,19 @@ function choseAIvsAI()
 
 async function train()
 {
-    // var myNNet = getModel()
-    // myNNet.summary()
-    // await trainModel(game, 1, myNNet)
-    const loadedModel = await tf.loadLayersModel(`indexeddb://model_number_0`);
-    console.log('loaded model')
+    var myNNet = getModel()
+    myNNet.summary()
+    await trainModel(game, 1, myNNet)
 
-    var output = await modelPredict(game, loadedModel)
+//     const loadedModel = await tf.loadLayersModel(`indexeddb://model_number_0`);
+//     console.log('loaded model')
 
-   var vaule = output[0]
-   var policy = output[1]
-   console.log(vaule.toString())
-   console.log(policy.toString())
+// //     var output = await modelPredict(game, loadedModel)
+
+// //    var vaule = output[0]
+// //    var policy = output[1]
+// //    console.log(vaule.toString())
+// //    console.log(policy.toString())
 }
 
 
@@ -82,8 +83,8 @@ var getBestMove = async function (game) {
                 return bestMove;
             case 'alphazero':
                 var d = new Date().getTime();
-                var myMCST = await buildMCST(2, 20, 'model_number_0')
-                var bestMove = myMCST.bestMove(game, 1600, WorB, 'robust', false)
+                var myMCST = await buildMCST(2, 160, 'model_number_0')
+                var bestMove = myMCST.bestMove(game, 16, WorB, 'robust', false)
                 console.log('final')
                 console.log(myMCST)
                 var d2 = new Date().getTime();
@@ -112,8 +113,8 @@ var getBestMove = async function (game) {
                 return bestMove;
             case 'alphazero':
                 var d = new Date().getTime();
-                var myMCST = await buildMCST(2, 20, 'model_number_0')
-                var bestMove = myMCST.bestMove(game, 1600, WorB, 'robust', false)
+                var myMCST = await buildMCST(2, 160, 'model_number_0')
+                var bestMove = myMCST.bestMove(game, 16, WorB, 'robust', false)
                 console.log('final')
                 console.log(myMCST)
                 var d2 = new Date().getTime();
