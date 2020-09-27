@@ -2,6 +2,22 @@ var board = null
 var game = new Chess()
 
 
+async function loadModel()
+{
+    const bestModel = await tf.loadLayersModel(`indexeddb://bestModel`);
+    if(bestModel != undefined)
+    {
+        console.log('loaded model current best model')
+    }
+    else
+    {
+        console.log('failed to load model this probally due to not having trained a model on this device')
+        console.log('click the train button to train a new model to be able to use AlphaZero')
+    }
+    return bestModel
+}
+
+
 var WorB; //true = white false = black
 
 function choseWhite()
@@ -25,24 +41,95 @@ function choseAIvsAI()
 
 async function train()
 {
-    var myNNet = getModel()
-    myNNet.summary()
-    await trainModel(game, 1, myNNet)
+    
 
-//     const loadedModel = await tf.loadLayersModel(`indexeddb://model_number_0`);
+    // var myNNet = getModel()
+    // myNNet.summary()
+    // await trainModel(game, 1, myNNet)
+    var data = await getTraingData(1)
+    console.log(data)
+
+//     const loadedModel = await tf.loadLayersModel(`indexeddb://bestModel`);
 //     console.log('loaded model')
 
-// //     var output = await modelPredict(game, loadedModel)
+//     var output = await modelPredict(game, loadedModel)
 
-// //    var vaule = output[0]
-// //    var policy = output[1]
-// //    console.log(vaule.toString())
-// //    console.log(policy.toString())
+//    var vaule = output[0]
+//    var policy = output[1]
+//    console.log(vaule.toString())
+//    console.log(policy.toString())
+}
+
+async function getTraingData(AmountOfGames)
+{
+    var data = []
+
+    for(var i = 0; i < AmountOfGames; i++)
+    {
+        var positionsAdded = 0;
+        var numOfPositionBeforeGame = 0;
+        if(game.game_over() == false)
+        {
+            async function makeMove () {
+                var newData = await makeOptimalMoveAlphaZeroTraing(i)
+                data.push(newData) 
+                positionsAdded++;
+                WorB = !WorB;
+                makeMove()
+            }
+                makeMove()
+        }
+        else{
+            var gameResult = null
+
+            for(var d = numOfPositionBeforeGame; d< positionsAdded - numOfPositionBeforeGame; d++)
+            {
+                switch(game.winner()) {
+                    case 1:
+                     if(data[d].turn == 'w')
+                     {
+                         gameResult = 1
+                     }
+                     else
+                     {
+                         gameResult = -1
+                     }
+                      break;
+                    case 0:
+                        if(data[d].turn == 'b')
+                        {
+                            gameResult = 1
+                        }
+                        else
+                        {
+                            gameResult = -1
+                        }
+                      break;
+                    case -1:
+                        gameResult = 0
+                      break;
+                      case -2:
+                        gameResult = 0
+                      break;
+                      case -3:
+                        gameResult = 0
+                      break;
+                      case -4:
+                        gameResult = 0
+                      break;
+                  }
+                data[d] = {gameNumber: data[d].gameNumber, position: data[d].position, policy: data[d].policy, turn: data[d].turn, result: gameResult}
+            }
+            game.reset()
+        }
+    }
+    return data
 }
 
 
 //gets best move from AlphaZero
 var getBestMove = async function (game) {
+    const bestModel = await loadModel();
     if (game.game_over()) {
         switch(game.winner()) {
             case 1:
@@ -83,9 +170,8 @@ var getBestMove = async function (game) {
                 return bestMove;
             case 'alphazero':
                 var d = new Date().getTime();
-                var myMCST = await buildMCST(2, 160, 'model_number_0')
-                var bestMove = myMCST.bestMove(game, 16, WorB, 'robust', false)
-                console.log('final')
+                var myMCST = new MCST(2,160, bestModel)
+                var bestMove = myMCST.bestMove(game, 20, WorB, 'robust', false).move
                 console.log(myMCST)
                 var d2 = new Date().getTime();
                 var moveTime = (d2 - d);
@@ -113,9 +199,8 @@ var getBestMove = async function (game) {
                 return bestMove;
             case 'alphazero':
                 var d = new Date().getTime();
-                var myMCST = await buildMCST(2, 160, 'model_number_0')
-                var bestMove = myMCST.bestMove(game, 16, WorB, 'robust', false)
-                console.log('final')
+                var myMCST = new MCST(2,160, bestModel)
+                var bestMove = (await myMCST.bestMove(game, 20, WorB, 'robust', false)).move
                 console.log(myMCST)
                 var d2 = new Date().getTime();
                 var moveTime = (d2 - d);
@@ -137,6 +222,29 @@ async function makeOptimalMove () {
     board.position(game.fen());
     renderMoveHistory(game.history());
 };
+
+async function makeOptimalMoveAlphaZeroTraing(myGameNumber)
+{
+    var output = await getBestMoveAlphaZeroTraining(game);
+    var myPolicy = output.policy
+    var bestMove = output.move
+    var data = {gameNumber: myGameNumber, position: game.fen(), policy: myPolicy, result: null, turn: game.turn()}
+    game.ugly_move(bestMove);
+    return data
+
+}
+
+var getBestMoveAlphaZeroTraining = async function (game)
+{
+    const bestModel = await loadModel()
+    if(game.game_over())
+    {
+        return;
+    }
+    var myMCST = new MCST(2,160, bestModel)
+    var output = (await myMCST.bestMove(game, 20, WorB, 'robust', false))
+    return output;    
+}
 
 //move history
 var renderMoveHistory = function (moves) {
@@ -396,3 +504,5 @@ function AIvsAI()
     {
         board.flip();
     }
+
+

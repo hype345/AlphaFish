@@ -334,7 +334,8 @@ function getModel() {
 
       var modelNumber = 0;
 
-      var name = 'model_number_' + modelNumber
+    //   var name = 'model_number_' + modelNumber
+    var name = 'bestModel'
 
       const saveResults = await model.save(`indexeddb://${name}`);
       console.log('model saved as ' + name)
@@ -361,11 +362,12 @@ function getModel() {
 //for AI
 class MCST_Node
 {
-    constructor(parent, state, action)
+    constructor(parent, state, action, childrenPolicy)
     {
         this.parent = parent
         this.state = state
         this.action = action
+        this.childrenPolicy = childrenPolicy
         this.vaule = 0
         this.visits = 0
         this.children = []
@@ -381,23 +383,16 @@ class MCST_Node
             return false
         }
     }
-    async getUCB1(biasParam, WorB, model) {
+    getUCB1(biasParam, WorB, policyArry) {
         // console.log('vaule: ', this.vaule)
         // console.log('visits: ', this.visits)
         // console.log('parent visits: ', this.parent.visits)
-
-        var output = await modelPredict(game, model)
-
-        var policyArry = output[1].arraySync()
-
-        // console.log(policyArry[0][this.action.from])
-
         if(WorB)
         {
-            return (this.vaule / this.visits) + biasParam * policyArry[0][this.action.from] * Math.sqrt(Math.log(this.parent.visits) / this.visits);
+            return (this.vaule / this.visits) + biasParam * (1 + policyArry[this.action.from]) * Math.sqrt(Math.log(this.parent.visits) / this.visits);
         }
         else{
-            return (this.vaule / this.visits) - biasParam * Math.sqrt(Math.log(this.parent.visits) / this.visits);
+            return (this.vaule / this.visits) - biasParam * (1 + policyArry[this.action.from]) * Math.sqrt(Math.log(this.parent.visits) / this.visits);
         }
         
       }
@@ -427,16 +422,26 @@ class MCST
         this.rolloutTimeLimit = rolloutTimeLimit
         this.model = model
     }
-    buildIntialTree(state)
+    async buildIntialTree(state)
     {
         this.state = state
-        this.root = new MCST_Node(null, this.state.fen(), null)
+
+        var output = await modelPredict(this.state, this.model)
+
+        var policyArry = output[1].arraySync()
+
+        this.root = new MCST_Node(null, this.state.fen(), null, policyArry[0])
         var possibleMoves = this.state.ugly_moves()
         for(var i = possibleMoves.length-1; i >= 0; i--)
         {
             this.state.ugly_move(possibleMoves[i])
+
+            // var output2 = await modelPredict(this.state, this.model)
+
+            // var policyArry2 = output2[1].arraySync()
+
             var newState = this.state.fen()
-            var childNode = new MCST_Node(this.root, newState, possibleMoves[i])
+            var childNode = new MCST_Node(this.root, newState, possibleMoves[i], null)
             this.root.children.push(childNode)
             this.state.undo()
         }
@@ -448,14 +453,20 @@ class MCST
         {
             if(current.visits == 0)
             {
-                var vaule = await this.rollout(current, random)
-                this.backpropigate(current, vaule)
+                var output = await this.rollout(current, random)
+                var vaule = output[0].arraySync()
+                var policy = output[1].arraySync()
+                current.childrenPolicy = policy[0]
+                this.backpropigate(current, vaule[0][0])
             }
             else
             {
-                current = this.expand(current)
-                var vaule = await this.rollout(current, random)
-                this.backpropigate(current, vaule)
+                current = await this.expand(current)
+                var output = await this.rollout(current, random)
+                var vaule = output[0].arraySync()
+                var policy = output[1].arraySync()
+                current.childrenPolicy = policy[0]
+                this.backpropigate(current, vaule[0][0])
             }
         }
         else{
@@ -475,7 +486,7 @@ class MCST
                 var maxUCB1 = -Infinity
                 for(var i = 0; i < current.children.length; i++)
                 {
-                    var currentUCB1 = await current.children[i].getUCB1(this.UCB1ExploreParam, WorB, this.model)
+                    var currentUCB1 = await current.children[i].getUCB1(this.UCB1ExploreParam, WorB, current.childrenPolicy)
                     // console.log(`w - node ${i}: ${currentUCB1}`)
                     if(Number.isNaN(currentUCB1))
                     {
@@ -494,7 +505,7 @@ class MCST
                 var minUCB1 = Infinity
                 for(var i = 0; i < current.children.length; i++)
                 {
-                    var currentUCB1 = await current.children[i].getUCB1(this.UCB1ExploreParam, WorB, this.model)
+                    var currentUCB1 = await current.children[i].getUCB1(this.UCB1ExploreParam, WorB, current.childrenPolicy)
                     // console.log(`b - node ${i}: ${currentUCB1}`)
                     if(Number.isNaN(currentUCB1))
                     {
@@ -511,7 +522,7 @@ class MCST
         }
 
     }
-    expand(node)
+    async expand(node)
     {
         var OriginalState = this.state.fen()
         this.state.load(node.state)
@@ -527,7 +538,12 @@ class MCST
         {
             this.state.ugly_move(possibleMoves[i])
             var newState = this.state.fen()
-            var childNode = new MCST_Node(node, newState, possibleMoves[i])
+
+            // var output = await modelPredict(this.state, this.model)
+
+            // var policyArry = output[1].arraySync()
+
+            var childNode = new MCST_Node(node, newState, possibleMoves[i], null)
             node.children.push(childNode)
             this.state.undo()
         }
@@ -567,12 +583,8 @@ class MCST
             // vaule = evaluateBoardAlphaZero(this.state.board()) non NN vaule function
 
             var output = await modelPredict(game, this.model)
-            var outputArry = output[0].arraySync()
-            // console.log(outputArry[0][0])
-            vaule = outputArry[0][0];
-
             this.state.load(OriginalState)
-            return vaule
+            return output
         }
     }
     backpropigate(node, vaule)
@@ -592,7 +604,8 @@ class MCST
     }
     async bestMove(state, iterations, WorB, type, random)
     {
-        this.buildIntialTree(state)
+        await this.buildIntialTree(state)
+
         for(var i = 0; i < iterations; i++)
         {
             await this.select(this.root, WorB, random)
@@ -650,6 +663,18 @@ class MCST
                 }
             }
         }
-        return bestAction
+        var currentPolicy = new Array(64); 
+        for (let z=0; z<64; ++z)
+        {
+            currentPolicy[z] = 0;
+        } 
+        for (let q = 0; q < this.root.children.length; q++)
+        {
+                currentPolicy[this.root.children[q].action.from] += this.root.children[q].visits / this.root.visits  
+
+        }
+        var output = {move: bestAction, policy: currentPolicy }
+        // console.log(output)
+        return output
     }
 }
