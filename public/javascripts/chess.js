@@ -187,6 +187,25 @@ var Chess = function(fen) {
       comments = {}
       update_setup(generate_fen())
     }
+
+
+    function fullClear(keep_headers) {
+      if (typeof keep_headers === 'undefined') {
+        keep_headers = false
+      }
+  
+      board = new Array(128)
+      kings = { w: EMPTY, b: EMPTY }
+      turn = WHITE
+      castling = { w: 0, b: 0 }
+      ep_square = EMPTY
+      half_moves = 0
+      move_number = 1
+      history = [] 
+      if (!keep_headers) header = {}
+      comments = {}
+      update_setup(generate_fen())
+    }
   
     function prune_comments() {
       var reversed_history = [];
@@ -208,7 +227,7 @@ var Chess = function(fen) {
     }
   
     function reset() {
-      load(DEFAULT_POSITION)
+      fullLoad(DEFAULT_POSITION)
     }
   
     function load(fen, keep_headers) {
@@ -225,6 +244,59 @@ var Chess = function(fen) {
       }
   
       clear(keep_headers)
+  
+      for (var i = 0; i < position.length; i++) {
+        var piece = position.charAt(i)
+  
+        if (piece === '/') {
+          square += 8
+        } else if (is_digit(piece)) {
+          square += parseInt(piece, 10)
+        } else {
+          var color = piece < 'a' ? WHITE : BLACK
+          put({ type: piece.toLowerCase(), color: color }, algebraic(square))
+          square++
+        }
+      }
+  
+      turn = tokens[1]
+  
+      if (tokens[2].indexOf('K') > -1) {
+        castling.w |= BITS.KSIDE_CASTLE
+      }
+      if (tokens[2].indexOf('Q') > -1) {
+        castling.w |= BITS.QSIDE_CASTLE
+      }
+      if (tokens[2].indexOf('k') > -1) {
+        castling.b |= BITS.KSIDE_CASTLE
+      }
+      if (tokens[2].indexOf('q') > -1) {
+        castling.b |= BITS.QSIDE_CASTLE
+      }
+  
+      ep_square = tokens[3] === '-' ? EMPTY : SQUARES[tokens[3]]
+      half_moves = parseInt(tokens[4], 10)
+      move_number = parseInt(tokens[5], 10)
+  
+      update_setup(generate_fen())
+  
+      return true
+    }
+
+    function fullLoad(fen, keep_headers) {
+      if (typeof keep_headers === 'undefined') {
+        keep_headers = false
+      }
+  
+      var tokens = fen.split(/\s+/)
+      var position = tokens[0]
+      var square = 0
+  
+      if (!validate_fen(fen).valid) {
+        return false
+      }
+  
+      fullClear(keep_headers)
   
       for (var i = 0; i < position.length; i++) {
         var piece = position.charAt(i)

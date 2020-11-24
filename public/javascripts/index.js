@@ -88,13 +88,16 @@ async function getTraingData(AmountOfGames)
 {
     const bestModel = await loadModel()
     var data = []
+    var positionsAdded = 0; 
+    var numOfPositionBeforeGame = 0;
+
 
     for(var i = 0; i < AmountOfGames; i++)
     {
-        var positionsAdded = 0;
-        var numOfPositionBeforeGame = 0;
-            async function playGame () {
-                var newData = await makeOptimalMoveAlphaZeroTraing(i, bestModel)
+        console.log(i)
+            async function takeTurn (thisGameNumber) {
+                console.log(i + ':')
+                var newData = await makeOptimalMoveAlphaZeroTraing(thisGameNumber, bestModel)
                 data.push(newData) 
                 positionsAdded++;
                 WorB = !WorB;
@@ -139,13 +142,15 @@ async function getTraingData(AmountOfGames)
                           }
                         data[d] = {gameNumber: data[d].gameNumber, position: data[d].position, policy: data[d].policy, turn: data[d].turn, result: gameResult}
                     }
+                    numOfPositionBeforeGame = positionsAdded + 1
                     game.reset()
+                    console.log('reset')
                 }
                 else{
-                        playGame()
+                        takeTurn(thisGameNumber)
                 }
             }
-                playGame()
+                takeTurn(i)
     }
     return data
 }
@@ -506,6 +511,11 @@ function AIvsAI()
     function boardFlip()
     {
         board.flip();
+    }
+
+    function resetGame()
+    {
+        game.reset()
     }
 
 
