@@ -2,12 +2,12 @@ var board = null
 var game = new Chess()
 
 
-async function loadModel()
+async function loadModel(name)
 {
-    const bestModel = await tf.loadLayersModel(`indexeddb://bestModel`);
+    const bestModel = await tf.loadLayersModel(`indexeddb://${name}`);
     if(bestModel != undefined)
     {
-        console.log('loaded model current best model')
+        console.log('loaded ', name)
     }
     else
     {
@@ -16,6 +16,7 @@ async function loadModel()
     }
     return bestModel
 }
+
 
 
 var WorB; //true = white false = black
@@ -41,22 +42,194 @@ function choseAIvsAI()
 
 async function train()
 {
+    numberOfTrainingLoops = 2
+    numberOfTrainingGames = 3
+    numberOfEpochs = 10
+    numberOfPlayoffGames = 2;
+    numberOfCompetitors = 1;
+
+
+    for(var c = 0; c < numberOfCompetitors; c++)
+    {
+    console.log('Competitor ' + c)
+
     //Load current best NN
-    var myNNet = await loadModel()
+    var myNNet = await loadModel('bestModel')
     // myNNet.summary()
 
-    //Current best NN plays itself
-    var data = await getTraingData(5)
+
+    console.log('Competitor ' + c + ' started training')
+    //NN trains agaist itself
+    for(var q = 0; q < numberOfTrainingLoops; q++)
+    {
+    //NN plays itself
+    if(q == 0)
+    {
+        var data = await getTraingData(numberOfTrainingGames, 'bestModel')
+    }
+    else {
+        var data = await getTraingData(numberOfTrainingGames, 'model_number_' + c)
+    }
+
     tf.util.shuffle(data)
     // console.log('train ', data)
 
+    //Formating the data from the training session
+    var input_x = []
 
-await trainModel(game, 1, myNNet)
+    var input_y_result = []
+    var input_y_policy = []
+
+    for(var i = 0; i<data.length; i++)
+    {
+        game.newPosition(data[i].position)
+        input_x.push(createGameState(game).arraySync())
+        input_y_result.push(data[i].result)
+        input_y_policy.push(data[i].policy)
+    }
+
+    var x_train = tf.tensor(input_x)
+    //   console.log(x_train.toString())
+
+    var y_train = [tf.tensor(input_y_result), tf.tensor(input_y_policy)]
+    // console.log(y_train[0].toString())
+    // console.log(y_train[1].toString())
+
+
+    //Training the NN
+    if(q == 0)
+    {
+        myNNet = myNNet
+    }
+    else {
+        myNNet = await loadModel('model_number_' + c)
+    }
+
+    await trainModel(x_train, y_train, myNNet, numberOfEpochs, data.length, c)
+    console.log('Competitor ' + c + ' finished training loop ' + q)
+    await loadModel('model_number_' + c)
+    }
+
+    console.log('Competitor ' + c + ' is going to the arena')
+    var matchScore = 0;
+    for(var l = 0; l < numberOfPlayoffGames; l++)
+    {
+        game.reset()
+        var bestModel = await loadModel('bestModel')
+        var competitor = await loadModel('model_number_' + c) 
+        if(l % 2 == 0)
+        {
+            viewerArena(bestModel, competitor)
+            switch(game.winner()) {
+                case 1:
+                    matchScore+=1
+                    console.log('the bestNN won as white')
+                  break;
+                case 0:
+                    matchScore-=1
+                    console.log('Competitor ' + c + ' won as black')
+                  break;
+                case -1:
+                    matchScore+=0
+                    console.log('Competitor ' + c + ' drew as black')
+                  break;
+                  case -2:
+                    matchScore+=0
+                    console.log('Competitor ' + c + ' drew as black')
+                  break;
+                  case -3:
+                    matchScore+=0
+                    console.log('Competitor ' + c + ' drew as black')
+                  break;
+                  case -4:
+                    matchScore+=0
+                    console.log('Competitor ' + c + ' drew as black')
+                  break;
+              }
+        }
+        else{
+            viewerArena(competitor, bestModel)
+            switch(game.winner()) {
+                case 1:
+                    matchScore-=1
+                    console.log('Competitor ' + c + ' won as white')
+                  break;
+                case 0:
+                    matchScore+=1
+                    console.log('the bestNN won as black')
+                  break;
+                case -1:
+                    matchScore+=0
+                    console.log('Competitor ' + c + ' drew as white')
+                  break;
+                  case -2:
+                    matchScore+=0
+                    console.log('Competitor ' + c + ' drew as white')
+                  break;
+                  case -3:
+                    matchScore+=0
+                    console.log('Competitor ' + c + ' drew as white')
+                  break;
+                  case -4:
+                    matchScore+=0
+                    console.log('Competitor ' + c + ' drew as white')
+                  break;
+              }
+        }
+        console.log('Competitor ' + c + ' vs bestNN match score is ' + matchScore)
+    }
+    if(matchScore < 0)
+    {
+        console.log('Competitor ' + c + ' beat the bestNN and is being promoted to the bestNN')
+        var newBest = await loadModel(competitorName)
+        await newBest.save(`indexeddb://bestModel`);
+    }
+    console.log('Competitor ' + c + ' failed to beat the bestNN and has been retired')
+}
 }
 
-async function makeOptimalMoveAlphaZeroTraing(myGameNumber, bestModel)
+function viewerArena(P1Model, P2Model)
 {
-    var output = await getBestMoveAlphaZeroTraining(game, bestModel);
+    async function AlphaMakeMove () {
+        if(WorB)
+        {
+            await makeOptimalMoveAlphaZeroTesting(P1Model);     
+        }
+        else{
+            await makeOptimalMoveAlphaZeroTesting(P2Model);    
+        }
+        renderMoveHistory(game.history());
+        WorB = !WorB;
+        window.setTimeout(AlphaMakeMove, 250)
+    }
+
+        board = Chessboard('myBoard', 'start');
+        window.setTimeout(AlphaMakeMove, 250)
+}
+
+async function makeOptimalMoveAlphaZeroTesting(model)
+{
+    board.position(game.fen());
+    var output = await getBestMoveAlphaZeroTesting(game, model);
+    var bestMove = output.move
+    game.ugly_move(bestMove);
+ 
+}
+
+var getBestMoveAlphaZeroTesting = async function (game, model)
+{
+    if(game.game_over())
+    {
+        return;
+    }
+    var myMCST = new MCST(2,160, model)
+    var output = (await myMCST.bestMove(game, 160, WorB, 'robust', false))
+    return output;    
+}
+
+async function makeOptimalMoveAlphaZeroTraing(myGameNumber, model)
+{
+    var output = await getBestMoveAlphaZeroTraining(game, model);
     var myPolicy = output.policy
     var bestMove = output.move
     // console.log(bestMove)
@@ -66,14 +239,14 @@ async function makeOptimalMoveAlphaZeroTraing(myGameNumber, bestModel)
 
 }
 
-var getBestMoveAlphaZeroTraining = async function (game, bestModel)
+var getBestMoveAlphaZeroTraining = async function (game, model)
 {
     if(game.game_over())
     {
         return;
     }
-    var myMCST = new MCST(2,160, bestModel)
-    var output = (await myMCST.bestMove(game, 20, WorB, 'robust', false))
+    var myMCST = new MCST(2,160, model)
+    var output = (await myMCST.bestMove(game, 160, WorB, 'robust', false))
     return output;    
 }
 
@@ -132,9 +305,9 @@ async function playGame (thisGameNumber, bestModel, data, positionsAdded) {
 }
 
 
-async function getTraingData(AmountOfGames)
+async function getTraingData(AmountOfGames, modelName)
 {
-    const bestModel = await loadModel()
+    const bestModel = await loadModel(modelName)
     var data = []
 
     for(var i = 0; i < AmountOfGames; i++)
@@ -149,7 +322,7 @@ async function getTraingData(AmountOfGames)
 
 //gets best move from AlphaZero
 var getBestMove = async function (game) {
-    const bestModel = await loadModel();
+    const bestModel = await loadModel('bestModel');
     if (game.game_over()) {
         switch(game.winner()) {
             case 1:
@@ -510,3 +683,78 @@ function AIvsAI()
     }
 
 
+    async function test()
+    {
+        var matchScore = 0;
+        for(var l = 0; l < 2; l++)
+        {
+            game.reset()
+            const bestModel = await loadModel('bestModel')
+            const competitor = await loadModel('model_number_' + 0) 
+            if(l % 2 == 0)
+            {
+                viewerArena(bestModel, competitor)
+                switch(game.winner()) {
+                    case 1:
+                        matchScore+=1
+                        console.log('the bestNN won as white')
+                      break;
+                    case 0:
+                        matchScore-=1
+                        console.log('Competitor ' + 0 + ' won as black')
+                      break;
+                    case -1:
+                        matchScore+=0
+                        console.log('Competitor ' + 0 + ' drew as black')
+                      break;
+                      case -2:
+                        matchScore+=0
+                        console.log('Competitor ' + 0 + ' drew as black')
+                      break;
+                      case -3:
+                        matchScore+=0
+                        console.log('Competitor ' + 0 + ' drew as black')
+                      break;
+                      case -4:
+                        matchScore+=0
+                        console.log('Competitor ' + 0 + ' drew as black')
+                      break;
+                  }
+            }
+            else{
+                viewerArena(competitor, bestModel)
+                switch(game.winner()) {
+                    case 1:
+                        matchScore-=1
+                        console.log('Competitor ' + 0 + ' won as white')
+                      break;
+                    case 0:
+                        matchScore+=1
+                        console.log('the bestNN won as black')
+                      break;
+                    case -1:
+                        matchScore+=0
+                        console.log('Competitor ' + 0 + ' drew as white')
+                      break;
+                      case -2:
+                        matchScore+=0
+                        console.log('Competitor ' + 0 + ' drew as white')
+                      break;
+                      case -3:
+                        matchScore+=0
+                        console.log('Competitor ' + 0 + ' drew as white')
+                      break;
+                      case -4:
+                        matchScore+=0
+                        console.log('Competitor ' + 0 + ' drew as white')
+                      break;
+                  }
+            }
+            console.log('Competitor ' + 0 + ' vs bestNN match score is ' + matchScore)
+        }
+        if(matchScore < 0)
+        {
+            console.log('Competitor ' + 0 + ' beat the bestNN and is being promoted to the bestNN')
+        }
+        console.log('Competitor ' + 0 + ' failed to beat the bestNN and has been retired')
+    }

@@ -229,6 +229,10 @@ var Chess = function(fen) {
     function reset() {
       fullLoad(DEFAULT_POSITION)
     }
+
+    function newPosition(fen) {
+      fullLoad(fen)
+    }
   
     function load(fen, keep_headers) {
       if (typeof keep_headers === 'undefined') {
@@ -1361,7 +1365,11 @@ var Chess = function(fen) {
       reset: function() {
         return reset()
       },
-  
+
+      newPosition: function(fen)
+      {
+        return newPosition(fen)
+      } , 
       moves: function(options) {
         /* The internal representation of a chess move is in 0x88 format, and
          * not meant to be human-readable.  The code below converts the 0x88

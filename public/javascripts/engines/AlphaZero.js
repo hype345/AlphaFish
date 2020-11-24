@@ -306,44 +306,34 @@ function getModel() {
   }
 
   
-  async function trainModel(game, results, model)
+  async function trainModel(x_train, y_train, model, numEpochs, myBatchSize, myModelNumber)
   {
-
-    var input = []
-
-    input.push(createGameState(game).arraySync())
-
-    var x_train = tf.tensor(input)
-
-    // console.log(x_train.toString())
-
-    
-    // console.log(x_train.toString())
-    // model.summary()
 
     const metrics = ['loss', 'val_loss', 'acc', 'val_acc'];
     const container = {name: 'Model Training', styles: { height: '1000px' }   };
     const fitCallbacks = tfvis.show.fitCallbacks(container, metrics);
 
 
-     await model.fit(x_train, [tf.ones([1]), tf.ones([1,64])], {
-        batchSize: 1,
-        epochs: 10,
+    model.compile({
+        optimizer: tf.train.adam(0.001),
+        loss: [tf.metrics.categoricalCrossentropy ,tf.losses.meanSquaredError],
+        metrics: [tf.metrics.categoricalCrossentropy ,tf.losses.meanSquaredError],
+      });
+
+
+     await model.fit(x_train, y_train, {
+        batchSize: myBatchSize,
+        epochs: numEpochs,
         shuffle: true,
         callbacks: fitCallbacks
       });
 
-      var modelNumber = 0;
+      var modelNumber = myModelNumber;
 
-    //   var name = 'model_number_' + modelNumber
-    var name = 'bestModel'
+      var name = 'model_number_' + modelNumber
 
       const saveResults = await model.save(`indexeddb://${name}`);
       console.log('model saved as ' + name)
-    //   const loadedModel = await tf.loadLayersModel('indexeddb://my-model');
-    //   console.log('loaded model')
-    //   console.log(await loadedModel.predict(x_train))
-      
   }
 
   async function modelPredict(input, model)
