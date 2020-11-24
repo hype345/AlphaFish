@@ -152,6 +152,7 @@ function getModel() {
 
   function createGameState(game) //rn the state has no history but could try adding hisotry but to save reasourses trying without a history
   {
+    
     var board = game.board()
     var turn = game.turn()
 

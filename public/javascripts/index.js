@@ -41,23 +41,17 @@ function choseAIvsAI()
 
 async function train()
 {
-    
-
-    // var myNNet = getModel()
+    //Load current best NN
+    var myNNet = await loadModel()
     // myNNet.summary()
-    // await trainModel(game, 1, myNNet)
-    var data = await getTraingData(1)
-    console.log('data ', data)
 
-//     const loadedModel = await tf.loadLayersModel(`indexeddb://bestModel`);
-//     console.log('loaded model')
+    //Current best NN plays itself
+    var data = await getTraingData(5)
+    tf.util.shuffle(data)
+    // console.log('train ', data)
 
-//     var output = await modelPredict(game, loadedModel)
 
-//    var vaule = output[0]
-//    var policy = output[1]
-//    console.log(vaule.toString())
-//    console.log(policy.toString())
+await trainModel(game, 1, myNNet)
 }
 
 async function makeOptimalMoveAlphaZeroTraing(myGameNumber, bestModel)
@@ -83,74 +77,71 @@ var getBestMoveAlphaZeroTraining = async function (game, bestModel)
     return output;    
 }
 
+async function playGame (thisGameNumber, bestModel, data, positionsAdded) {
+    var newData = await makeOptimalMoveAlphaZeroTraing(thisGameNumber, bestModel)
+    data.push(newData) 
+    positionsAdded++;
+    WorB = !WorB;
+    if(game.game_over() == true){
+        var gameResult = null
+
+        for(var d = 0; d< positionsAdded; d++)
+        {
+            switch(game.winner()) {
+                case 1:
+                 if(data[d].turn == 'w')
+                 {
+                     gameResult = 1
+                 }
+                 else
+                 {
+                     gameResult = -1
+                 }
+                  break;
+                case 0:
+                    if(data[d].turn == 'b')
+                    {
+                        gameResult = 1
+                    }
+                    else
+                    {
+                        gameResult = -1
+                    }
+                  break;
+                case -1:
+                    gameResult = 0
+                  break;
+                  case -2:
+                    gameResult = 0
+                  break;
+                  case -3:
+                    gameResult = 0
+                  break;
+                  case -4:
+                    gameResult = 0
+                  break;
+              }
+            data[d] = {gameNumber: data[d].gameNumber, position: data[d].position, policy: data[d].policy, turn: data[d].turn, result: gameResult}
+        }
+        game.reset()
+        // console.log(data)
+    }
+    else{
+            await playGame(thisGameNumber, bestModel, data, positionsAdded)
+    }
+}
+
 
 async function getTraingData(AmountOfGames)
 {
     const bestModel = await loadModel()
     var data = []
-    var positionsAdded = 0; 
-    var numOfPositionBeforeGame = 0;
-
 
     for(var i = 0; i < AmountOfGames; i++)
     {
-        console.log(i)
-            async function takeTurn (thisGameNumber) {
-                console.log(i + ':')
-                var newData = await makeOptimalMoveAlphaZeroTraing(thisGameNumber, bestModel)
-                data.push(newData) 
-                positionsAdded++;
-                WorB = !WorB;
-                if(game.game_over() == true){
-                    var gameResult = null
-        
-                    for(var d = numOfPositionBeforeGame; d< positionsAdded - numOfPositionBeforeGame; d++)
-                    {
-                        switch(game.winner()) {
-                            case 1:
-                             if(data[d].turn == 'w')
-                             {
-                                 gameResult = 1
-                             }
-                             else
-                             {
-                                 gameResult = -1
-                             }
-                              break;
-                            case 0:
-                                if(data[d].turn == 'b')
-                                {
-                                    gameResult = 1
-                                }
-                                else
-                                {
-                                    gameResult = -1
-                                }
-                              break;
-                            case -1:
-                                gameResult = 0
-                              break;
-                              case -2:
-                                gameResult = 0
-                              break;
-                              case -3:
-                                gameResult = 0
-                              break;
-                              case -4:
-                                gameResult = 0
-                              break;
-                          }
-                        data[d] = {gameNumber: data[d].gameNumber, position: data[d].position, policy: data[d].policy, turn: data[d].turn, result: gameResult}
-                    }
-                    numOfPositionBeforeGame = positionsAdded + 1
-                    game.reset()
-                    console.log('reset')
-                }
-                else{
-                        takeTurn(thisGameNumber)
-                }
-            }
-                takeTurn(i)
+        var gameData = []
+        await playGame(i, bestModel, gameData, 0)
+        data.push(...gameData)
     }
     return data
 }
