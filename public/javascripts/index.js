@@ -93,60 +93,59 @@ async function getTraingData(AmountOfGames)
     {
         var positionsAdded = 0;
         var numOfPositionBeforeGame = 0;
-        if(game.game_over() == false)
-        {
-            async function makeMove () {
+            async function playGame () {
                 var newData = await makeOptimalMoveAlphaZeroTraing(i, bestModel)
                 data.push(newData) 
                 positionsAdded++;
                 WorB = !WorB;
-                makeMove()
+                if(game.game_over() == true){
+                    var gameResult = null
+        
+                    for(var d = numOfPositionBeforeGame; d< positionsAdded - numOfPositionBeforeGame; d++)
+                    {
+                        switch(game.winner()) {
+                            case 1:
+                             if(data[d].turn == 'w')
+                             {
+                                 gameResult = 1
+                             }
+                             else
+                             {
+                                 gameResult = -1
+                             }
+                              break;
+                            case 0:
+                                if(data[d].turn == 'b')
+                                {
+                                    gameResult = 1
+                                }
+                                else
+                                {
+                                    gameResult = -1
+                                }
+                              break;
+                            case -1:
+                                gameResult = 0
+                              break;
+                              case -2:
+                                gameResult = 0
+                              break;
+                              case -3:
+                                gameResult = 0
+                              break;
+                              case -4:
+                                gameResult = 0
+                              break;
+                          }
+                        data[d] = {gameNumber: data[d].gameNumber, position: data[d].position, policy: data[d].policy, turn: data[d].turn, result: gameResult}
+                    }
+                    game.reset()
+                }
+                else{
+                        playGame()
+                }
             }
-                makeMove()
-        }
-        else{
-            var gameResult = null
-
-            for(var d = numOfPositionBeforeGame; d< positionsAdded - numOfPositionBeforeGame; d++)
-            {
-                switch(game.winner()) {
-                    case 1:
-                     if(data[d].turn == 'w')
-                     {
-                         gameResult = 1
-                     }
-                     else
-                     {
-                         gameResult = -1
-                     }
-                      break;
-                    case 0:
-                        if(data[d].turn == 'b')
-                        {
-                            gameResult = 1
-                        }
-                        else
-                        {
-                            gameResult = -1
-                        }
-                      break;
-                    case -1:
-                        gameResult = 0
-                      break;
-                      case -2:
-                        gameResult = 0
-                      break;
-                      case -3:
-                        gameResult = 0
-                      break;
-                      case -4:
-                        gameResult = 0
-                      break;
-                  }
-                data[d] = {gameNumber: data[d].gameNumber, position: data[d].position, policy: data[d].policy, turn: data[d].turn, result: gameResult}
-            }
-            game.reset()
-        }
+                playGame()
     }
     return data
 }
