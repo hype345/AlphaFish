@@ -685,6 +685,7 @@ var Chess = function(fen) {
      * 4. ... Ne7 is technically the valid SAN
      */
     function move_to_san(move, sloppy) {
+      // console.log('move ', move)
       var output = ''
   
       if (move.flags & BITS.KSIDE_CASTLE) {
@@ -1189,7 +1190,7 @@ var Chess = function(fen) {
     /* pretty = external move object */
     function make_pretty(ugly_move) {
       var move = clone(ugly_move)
-      move.san = move_to_san(move, false)
+      // move.san = move_to_san(move, false)
       move.to = algebraic(move.to)
       move.from = algebraic(move.from)
   
@@ -1901,6 +1902,55 @@ var Chess = function(fen) {
           make_move(move)
         }
         return move_history
+      },
+      makePretty: function(ugly_move)
+      {
+        var move = make_pretty(ugly_move)
+        // console.log(move)
+        // console.log(this.SanToNumber(move))
+        return this.SanToNumber(move)
+      },
+      SanToNumber: function(move)
+      {
+        var result = 0
+        var square = move.from
+        var res = square.split("")
+
+        switch(res[0]){
+          case 'a':
+            {
+              return result = (res[1] * 8) - 8
+            }
+          case 'b':
+            {
+              return result = (res[1] * 8) - 7
+            }
+          case 'c':
+            {
+              return result = (res[1] * 8) - 6
+            }
+          case 'd':
+            {
+              return result = (res[1] * 8) - 5 
+            }
+          case 'e':
+            {
+              return result = (res[1] * 8) - 4
+            }
+          case 'f':
+            {
+              return result = (res[1] * 8) - 3
+            }
+          case 'g':
+            {
+              return result = (res[1] * 8) - 2
+            }
+          case 'h':
+            {
+              return result = (res[1] * 8) - 1
+            }
+        }
+        // return result
       },
       deepHistory: function(options) {
         var reversed_history = []

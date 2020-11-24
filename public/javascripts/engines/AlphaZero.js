@@ -383,16 +383,18 @@ class MCST_Node
             return false
         }
     }
-    getUCB1(biasParam, WorB, policyArry) {
+    getUCB1(biasParam, WorB, policy) {
         // console.log('vaule: ', this.vaule)
         // console.log('visits: ', this.visits)
         // console.log('parent visits: ', this.parent.visits)
+        // console.log('policy', policy)
+
         if(WorB)
         {
-            return (this.vaule / this.visits) + biasParam * (1 + policyArry[this.action.from]) * Math.sqrt(Math.log(this.parent.visits) / this.visits);
+            return (this.vaule / this.visits) + biasParam * (1 + policy) * Math.sqrt(Math.log(this.parent.visits) / this.visits);
         }
         else{
-            return (this.vaule / this.visits) - biasParam * (1 + policyArry[this.action.from]) * Math.sqrt(Math.log(this.parent.visits) / this.visits);
+            return (this.vaule / this.visits) - biasParam * (1 + policy) * Math.sqrt(Math.log(this.parent.visits) / this.visits);
         }
         
       }
@@ -486,7 +488,11 @@ class MCST
                 var maxUCB1 = -Infinity
                 for(var i = 0; i < current.children.length; i++)
                 {
-                    var currentUCB1 = await current.children[i].getUCB1(this.UCB1ExploreParam, WorB, current.childrenPolicy)
+                    // console.log(i)
+                    // console.log(typeof(this.state.makePretty(current.children[i].action)))
+                    // console.log((this.state.makePretty(current.children[i].action)))
+                    // console.log(current.children[i].action)
+                    var currentUCB1 = await current.children[i].getUCB1(this.UCB1ExploreParam, WorB, current.childrenPolicy[this.state.makePretty(current.children[i].action)])
                     // console.log(`w - node ${i}: ${currentUCB1}`)
                     if(Number.isNaN(currentUCB1))
                     {
@@ -505,7 +511,8 @@ class MCST
                 var minUCB1 = Infinity
                 for(var i = 0; i < current.children.length; i++)
                 {
-                    var currentUCB1 = await current.children[i].getUCB1(this.UCB1ExploreParam, WorB, current.childrenPolicy)
+                    // console.log(typeof(this.state.makePretty(current.children[i].action)))
+                    var currentUCB1 = await current.children[i].getUCB1(this.UCB1ExploreParam, WorB, current.childrenPolicy[this.state.makePretty(current.children[i].action)])
                     // console.log(`b - node ${i}: ${currentUCB1}`)
                     if(Number.isNaN(currentUCB1))
                     {
@@ -582,7 +589,7 @@ class MCST
             this.state.load(nodeState)
             // vaule = evaluateBoardAlphaZero(this.state.board()) non NN vaule function
 
-            var output = await modelPredict(game, this.model)
+            var output = await modelPredict(this.state, this.model)
             this.state.load(OriginalState)
             return output
         }
@@ -609,6 +616,7 @@ class MCST
         for(var i = 0; i < iterations; i++)
         {
             await this.select(this.root, WorB, random)
+            // console.log('Rep' + i)
         }
         var bestAction
         var currentVaule        
@@ -670,7 +678,8 @@ class MCST
         } 
         for (let q = 0; q < this.root.children.length; q++)
         {
-                currentPolicy[this.root.children[q].action.from] += this.root.children[q].visits / this.root.visits  
+                currentPolicy[this.state.makePretty(this.root.children[q].action)] += this.root.children[q].visits / this.root.visits  
+                // console.log(this.state.makePretty(this.root.children[q].action))
 
         }
         var output = {move: bestAction, policy: currentPolicy }
