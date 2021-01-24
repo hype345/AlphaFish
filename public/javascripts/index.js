@@ -2,6 +2,7 @@ var board = null
 var game = new Chess()
 
 
+
 async function loadModel(name)
 {
     const bestModel = await tf.loadLayersModel(`indexeddb://${name}`);
@@ -42,154 +43,156 @@ function choseAIvsAI()
 
 async function train()
 {
-    numberOfTrainingLoops = 2
-    numberOfTrainingGames = 3
-    numberOfEpochs = 10
-    numberOfPlayoffGames = 2;
-    numberOfCompetitors = 1;
+  
+  var numberOfTrainingLoops = 2
+  var numberOfTrainingGames = 3
+  var numberOfEpochs = 10
+  var numberOfPlayoffGames = 2;
+  var numberOfCompetitors = 1;
 
 
-    for(var c = 0; c < numberOfCompetitors; c++)
-    {
-    console.log('Competitor ' + c)
+  for(var c = 0; c < numberOfCompetitors; c++)
+  {
+  console.log('Competitor ' + c)
 
-    //Load current best NN
-    var myNNet = await loadModel('bestModel')
-    // myNNet.summary()
-
-
-    console.log('Competitor ' + c + ' started training')
-    //NN trains agaist itself
-    for(var q = 0; q < numberOfTrainingLoops; q++)
-    {
-    //NN plays itself
-    if(q == 0)
-    {
-        var data = await getTraingData(numberOfTrainingGames, 'bestModel')
-    }
-    else {
-        var data = await getTraingData(numberOfTrainingGames, 'model_number_' + c)
-    }
-
-    tf.util.shuffle(data)
-    // console.log('train ', data)
-
-    //Formating the data from the training session
-    var input_x = []
-
-    var input_y_result = []
-    var input_y_policy = []
-
-    for(var i = 0; i<data.length; i++)
-    {
-        game.newPosition(data[i].position)
-        input_x.push(createGameState(game).arraySync())
-        input_y_result.push(data[i].result)
-        input_y_policy.push(data[i].policy)
-    }
-
-    var x_train = tf.tensor(input_x)
-    //   console.log(x_train.toString())
-
-    var y_train = [tf.tensor(input_y_result), tf.tensor(input_y_policy)]
-    // console.log(y_train[0].toString())
-    // console.log(y_train[1].toString())
+  //Load current best NN
+  var myNNet = await loadModel('bestModel')
+  // myNNet.summary()
 
 
-    //Training the NN
-    if(q == 0)
-    {
-        myNNet = myNNet
-    }
-    else {
-        myNNet = await loadModel('model_number_' + c)
-    }
+  console.log('Competitor ' + c + ' started training')
+  //NN trains agaist itself
+  for(var q = 0; q < numberOfTrainingLoops; q++)
+  {
+  //NN plays itself
+  if(q == 0)
+  {
+      var data = await getTraingData(numberOfTrainingGames, 'bestModel')
+  }
+  else {
+      var data = await getTraingData(numberOfTrainingGames, 'model_number_' + c)
+  }
 
-    await trainModel(x_train, y_train, myNNet, numberOfEpochs, data.length, c)
-    console.log('Competitor ' + c + ' finished training loop ' + q)
-    await loadModel('model_number_' + c)
-    }
+  tf.util.shuffle(data)
+  // console.log('train ', data)
 
-    console.log('Competitor ' + c + ' is going to the arena')
-    var matchScore = 0;
-    for(var l = 0; l < numberOfPlayoffGames; l++)
-    {
-        game.reset()
-        var bestModel = await loadModel('bestModel')
-        var competitor = await loadModel('model_number_' + c) 
-        if(l % 2 == 0)
-        {
-            viewerArena(bestModel, competitor)
-            switch(game.winner()) {
-                case 1:
-                    matchScore+=1
-                    console.log('the bestNN won as white')
-                  break;
-                case 0:
-                    matchScore-=1
-                    console.log('Competitor ' + c + ' won as black')
-                  break;
-                case -1:
-                    matchScore+=0
-                    console.log('Competitor ' + c + ' drew as black')
-                  break;
-                  case -2:
-                    matchScore+=0
-                    console.log('Competitor ' + c + ' drew as black')
-                  break;
-                  case -3:
-                    matchScore+=0
-                    console.log('Competitor ' + c + ' drew as black')
-                  break;
-                  case -4:
-                    matchScore+=0
-                    console.log('Competitor ' + c + ' drew as black')
-                  break;
-              }
-        }
-        else{
-            viewerArena(competitor, bestModel)
-            switch(game.winner()) {
-                case 1:
-                    matchScore-=1
-                    console.log('Competitor ' + c + ' won as white')
-                  break;
-                case 0:
-                    matchScore+=1
-                    console.log('the bestNN won as black')
-                  break;
-                case -1:
-                    matchScore+=0
-                    console.log('Competitor ' + c + ' drew as white')
-                  break;
-                  case -2:
-                    matchScore+=0
-                    console.log('Competitor ' + c + ' drew as white')
-                  break;
-                  case -3:
-                    matchScore+=0
-                    console.log('Competitor ' + c + ' drew as white')
-                  break;
-                  case -4:
-                    matchScore+=0
-                    console.log('Competitor ' + c + ' drew as white')
-                  break;
-              }
-        }
-        console.log('Competitor ' + c + ' vs bestNN match score is ' + matchScore)
-    }
-    if(matchScore < 0)
-    {
-        console.log('Competitor ' + c + ' beat the bestNN and is being promoted to the bestNN')
-        var newBest = await loadModel(competitorName)
-        await newBest.save(`indexeddb://bestModel`);
-    }
-    console.log('Competitor ' + c + ' failed to beat the bestNN and has been retired')
+  //Formating the data from the training session
+  var input_x = []
+
+  var input_y_result = []
+  var input_y_policy = []
+
+  for(var i = 0; i<data.length; i++)
+  {
+      game.newPosition(data[i].position)
+      input_x.push(createGameState(game).arraySync())
+      input_y_result.push(data[i].result)
+      input_y_policy.push(data[i].policy)
+  }
+
+  var x_train = tf.tensor(input_x)
+  //   console.log(x_train.toString())
+
+  var y_train = [tf.tensor(input_y_result), tf.tensor(input_y_policy)]
+  // console.log(y_train[0].toString())
+  // console.log(y_train[1].toString())
+
+
+  //Training the NN
+  if(q == 0)
+  {
+      myNNet = myNNet
+  }
+  else {
+      myNNet = await loadModel('model_number_' + c)
+  }
+
+  await trainModel(x_train, y_train, myNNet, numberOfEpochs, data.length, c)
+  console.log('Competitor ' + c + ' finished training loop ' + q)
+  await loadModel('model_number_' + c)
+  }
+
+  console.log('Competitor ' + c + ' is going to the arena')
+  var matchScore = 0;
+  for(var l = 0; l < numberOfPlayoffGames; l++)
+  {
+      game.reset()
+      var bestModel = await loadModel('bestModel')
+      var competitor = await loadModel('model_number_' + c) 
+      if(l % 2 == 0)
+      {
+          viewerArena(bestModel, competitor)
+          switch(game.winner()) {
+              case 1:
+                  matchScore+=1
+                  console.log('the bestNN won as white')
+                break;
+              case 0:
+                  matchScore-=1
+                  console.log('Competitor ' + c + ' won as black')
+                break;
+              case -1:
+                  matchScore+=0
+                  console.log('Competitor ' + c + ' drew as black')
+                break;
+                case -2:
+                  matchScore+=0
+                  console.log('Competitor ' + c + ' drew as black')
+                break;
+                case -3:
+                  matchScore+=0
+                  console.log('Competitor ' + c + ' drew as black')
+                break;
+                case -4:
+                  matchScore+=0
+                  console.log('Competitor ' + c + ' drew as black')
+                break;
+            }
+      }
+      else{
+          viewerArena(competitor, bestModel)
+          switch(game.winner()) {
+              case 1:
+                  matchScore-=1
+                  console.log('Competitor ' + c + ' won as white')
+                break;
+              case 0:
+                  matchScore+=1
+                  console.log('the bestNN won as black')
+                break;
+              case -1:
+                  matchScore+=0
+                  console.log('Competitor ' + c + ' drew as white')
+                break;
+                case -2:
+                  matchScore+=0
+                  console.log('Competitor ' + c + ' drew as white')
+                break;
+                case -3:
+                  matchScore+=0
+                  console.log('Competitor ' + c + ' drew as white')
+                break;
+                case -4:
+                  matchScore+=0
+                  console.log('Competitor ' + c + ' drew as white')
+                break;
+            }
+      }
+      console.log('Competitor ' + c + ' vs bestNN match score is ' + matchScore)
+  }
+  if(matchScore < 0)
+  {
+      console.log('Competitor ' + c + ' beat the bestNN and is being promoted to the bestNN')
+      var newBest = await loadModel(competitorName)
+      await newBest.save(`indexeddb://bestModel`);
+  }
+  console.log('Competitor ' + c + ' failed to beat the bestNN and has been retired')
 }
 }
 
-function viewerArena(P1Model, P2Model)
-{
+async function viewerArena(P1Model, P2Model)
+{ 
+
     async function AlphaMakeMove () {
         if(WorB)
         {
@@ -198,22 +201,30 @@ function viewerArena(P1Model, P2Model)
         else{
             await makeOptimalMoveAlphaZeroTesting(P2Model);    
         }
-        renderMoveHistory(game.history());
         WorB = !WorB;
-        window.setTimeout(AlphaMakeMove, 250)
+        if(game.game_over()==true)
+        {
+          return
+        }
+        window.setTimeout(AlphaMakeMove, 25)
     }
 
         board = Chessboard('myBoard', 'start');
-        window.setTimeout(AlphaMakeMove, 250)
+        window.setTimeout(AlphaMakeMove, 25)
 }
 
 async function makeOptimalMoveAlphaZeroTesting(model)
 {
-    board.position(game.fen());
+    
     var output = await getBestMoveAlphaZeroTesting(game, model);
+
+  if(game.game_over() == false)
+  {
     var bestMove = output.move
     game.ugly_move(bestMove);
- 
+    board.position(game.fen());
+    renderMoveHistory(game.history());
+  }
 }
 
 var getBestMoveAlphaZeroTesting = async function (game, model)
@@ -223,7 +234,7 @@ var getBestMoveAlphaZeroTesting = async function (game, model)
         return;
     }
     var myMCST = new MCST(2,160, model)
-    var output = (await myMCST.bestMove(game, 160, WorB, 'robust', false))
+    var output = (await myMCST.bestMove(game, 20, WorB, 'robust', false))
     return output;    
 }
 
@@ -246,7 +257,7 @@ var getBestMoveAlphaZeroTraining = async function (game, model)
         return;
     }
     var myMCST = new MCST(2,160, model)
-    var output = (await myMCST.bestMove(game, 160, WorB, 'robust', false))
+    var output = (await myMCST.bestMove(game, 20, WorB, 'robust', false))
     return output;    
 }
 
@@ -324,26 +335,6 @@ async function getTraingData(AmountOfGames, modelName)
 var getBestMove = async function (game) {
     const bestModel = await loadModel('bestModel');
     if (game.game_over()) {
-        switch(game.winner()) {
-            case 1:
-              alert("White won by checkmate")
-              break;
-            case 0:
-                alert("Black won by checkmate")
-              break;
-            case -1:
-                alert("draw by half moves")
-              break;
-              case -2:
-                alert("draw by stalemate")
-              break;
-              case -3:
-                alert("draw by insufficient material")
-              break;
-              case -4:
-                alert("draw by three fold repetition")
-              break;
-          }
         return;
     }
 
@@ -413,9 +404,17 @@ async function makeOptimalMove () {
     var bestMove = await getBestMove(game);
     // console.log(bestMove)
     // console.log(game.makePretty(bestMove))
-    game.ugly_move(bestMove);
-    board.position(game.fen());
-    renderMoveHistory(game.history());
+    if(game.game_over() == false)
+    {
+      game.ugly_move(bestMove);
+      board.position(game.fen());
+      renderMoveHistory(game.history());
+    }
+    if(game.game_over() == true)
+    {
+      window.setTimeout(displayGameResult, 500) //this is buggy allert stops code and some how would run before board updates but with this arbitray timeout the timeing seems to work
+      // displayGameResult()
+    }
 };
 
 //move history
@@ -436,26 +435,7 @@ function playAsWhite()
     function onDragStart (source, piece, position, orientation) {
         // do not pick up pieces if the game is over
         if (game.game_over()) {
-            switch(game.winner()) {
-                case 1:
-                  alert("White won by checkmate")
-                  break;
-                case 0:
-                    alert("Black won by checkmate")
-                  break;
-                case -1:
-                    alert("draw by half moves")
-                  break;
-                  case -2:
-                    alert("draw by stalemate")
-                  break;
-                  case -3:
-                    alert("draw by insufficient material")
-                  break;
-                  case -4:
-                    alert("draw by three fold repetition")
-                  break;
-              }
+          displayGameResult()
             return;
         }
         
@@ -549,26 +529,7 @@ function playAsBlack()
     function onDragStart (source, piece, position, orientation) {
         // do not pick up pieces if the game is over
         if (game.game_over()) {
-            switch(game.winner()) {
-                case 1:
-                  alert("White won by checkmate")
-                  break;
-                case 0:
-                    alert("Black won by checkmate")
-                  break;
-                case -1:
-                    alert("draw by half moves")
-                  break;
-                  case -2:
-                    alert("draw by stalemate")
-                  break;
-                  case -3:
-                    alert("draw by insufficient material")
-                  break;
-                  case -4:
-                    alert("draw by three fold repetition")
-                  break;
-              }
+          displayGameResult()
             return;
         }
         
@@ -658,14 +619,16 @@ function playAsBlack()
 }
 function AIvsAI()
 {
-            
             async function makeMove () {
-            await makeOptimalMove();
-            renderMoveHistory(game.history());
-            WorB = !WorB;
-            window.setTimeout(makeMove, 250)
+                await makeOptimalMove();
+                WorB = !WorB;
+                if(game.game_over()==true)
+                {
+                  // displayGameResult()
+                  return;
+                }
+                window.setTimeout(makeMove, 250)
         }
-
             board = Chessboard('myBoard', 'start');
             window.setTimeout(makeMove, 250)
 }
@@ -682,8 +645,32 @@ function AIvsAI()
         game.reset()
     }
 
+    function displayGameResult()
+    {
+      switch(game.winner()) {
+        case 1:
+          alert("White won by checkmate")
+          break;
+        case 0:
+            alert("Black won by checkmate")
+          break;
+        case -1:
+            alert("draw by half moves")
+          break;
+          case -2:
+            alert("draw by stalemate")
+          break;
+          case -3:
+            alert("draw by insufficient material")
+          break;
+          case -4:
+            alert("draw by three fold repetition")
+          break;
+      }
+    }
 
-    async function test()
+
+    async function oldtest()
     {
         var matchScore = 0;
         for(var l = 0; l < 2; l++)
@@ -757,4 +744,14 @@ function AIvsAI()
             console.log('Competitor ' + 0 + ' beat the bestNN and is being promoted to the bestNN')
         }
         console.log('Competitor ' + 0 + ' failed to beat the bestNN and has been retired')
+    }
+
+    async function test()
+    {
+      const bestModel = await loadModel('bestModel')
+      const competitor = await loadModel('model_number_' + 0) 
+      await viewerArena(bestModel, competitor)
+
+
+        console.log(game.winner())
     }
