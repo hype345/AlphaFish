@@ -3,6 +3,7 @@ var game = new Chess()
 
 
 
+
 async function loadModel(name)
 {
     const bestModel = await tf.loadLayersModel(`indexeddb://${name}`);
@@ -114,6 +115,8 @@ async function train()
 
   console.log('Competitor ' + c + ' is going to the arena')
   var matchScore = 0;
+  var challengerScore = 0
+  var bestNNScore = 0
   for(var l = 0; l < numberOfPlayoffGames; l++)
   {
       game.reset()
@@ -121,64 +124,84 @@ async function train()
       var competitor = await loadModel('model_number_' + c) 
       if(l % 2 == 0)
       {
-          viewerArena(bestModel, competitor)
-          switch(game.winner()) {
-              case 1:
-                  matchScore+=1
-                  console.log('the bestNN won as white')
-                break;
-              case 0:
-                  matchScore-=1
-                  console.log('Competitor ' + c + ' won as black')
-                break;
-              case -1:
-                  matchScore+=0
-                  console.log('Competitor ' + c + ' drew as black')
-                break;
-                case -2:
-                  matchScore+=0
-                  console.log('Competitor ' + c + ' drew as black')
-                break;
-                case -3:
-                  matchScore+=0
-                  console.log('Competitor ' + c + ' drew as black')
-                break;
-                case -4:
-                  matchScore+=0
-                  console.log('Competitor ' + c + ' drew as black')
-                break;
-            }
-      }
-      else{
-          viewerArena(competitor, bestModel)
-          switch(game.winner()) {
-              case 1:
-                  matchScore-=1
-                  console.log('Competitor ' + c + ' won as white')
-                break;
-              case 0:
-                  matchScore+=1
-                  console.log('the bestNN won as black')
-                break;
-              case -1:
-                  matchScore+=0
-                  console.log('Competitor ' + c + ' drew as white')
-                break;
-                case -2:
-                  matchScore+=0
-                  console.log('Competitor ' + c + ' drew as white')
-                break;
-                case -3:
-                  matchScore+=0
-                  console.log('Competitor ' + c + ' drew as white')
-                break;
-                case -4:
-                  matchScore+=0
-                  console.log('Competitor ' + c + ' drew as white')
-                break;
-            }
-      }
-      console.log('Competitor ' + c + ' vs bestNN match score is ' + matchScore)
+        await ArenaGame(bestModel, competitor)
+        switch(game.winner()) {
+            case 1:
+                matchScore+=1
+                bestNNScore+=1
+                console.log('the bestNN won as white')
+              break;
+            case 0:
+                matchScore-=1
+                challengerScore+=1
+                console.log('Competitor ' + c + ' won as black')
+              break;
+            case -1:
+                bestNNScore+=.5
+                challengerScore+=.5
+                matchScore+=0
+                console.log('Competitor ' + c + ' drew as black')
+              break;
+              case -2:
+                bestNNScore+=.5
+                challengerScore+=.5
+                matchScore+=0
+                console.log('Competitor ' + c + ' drew as black')
+              break;
+              case -3:
+                bestNNScore+=.5
+                challengerScore+=.5
+                matchScore+=0
+                console.log('Competitor ' + c + ' drew as black')
+              break;
+              case -4:
+                bestNNScore+=.5
+                challengerScore+=.5
+                matchScore+=0
+                console.log('Competitor ' + c + ' drew as black')
+              break;
+          }
+    }
+    else{
+        await ArenaGame(competitor, bestModel)
+        switch(game.winner()) {
+            case 1:
+                matchScore-=1
+                challengerScore+=1
+                console.log('Competitor ' + c + ' won as white')
+              break;
+            case 0:
+                matchScore+=1
+                bestNNScore+=1
+                console.log('the bestNN won as black')
+              break;
+            case -1:
+                bestNNScore+=.5
+                challengerScore+=.5
+                matchScore+=0
+                console.log('Competitor ' + c + ' drew as white')
+              break;
+              case -2:
+                bestNNScore+=.5
+                challengerScore+=.5
+                matchScore+=0
+                console.log('Competitor ' + c + ' drew as white')
+              break;
+              case -3:
+                bestNNScore+=.5
+                challengerScore+=.5
+                matchScore+=0
+                console.log('Competitor ' + c + ' drew as white')
+              break;
+              case -4:
+                bestNNScore+=.5
+                challengerScore+=.5
+                matchScore+=0
+                console.log('Competitor ' + c + ' drew as white')
+              break;
+          }
+    }
+    console.log('Competitor ' + c + ' vs bestNN match score is bestNN- ' + bestNNScore + 'Competitor ' + c + '- ' + challengerScore)
   }
   if(matchScore < 0)
   {
@@ -192,7 +215,6 @@ async function train()
 
 async function viewerArena(P1Model, P2Model)
 { 
-
     async function AlphaMakeMove () {
         if(WorB)
         {
@@ -204,13 +226,13 @@ async function viewerArena(P1Model, P2Model)
         WorB = !WorB;
         if(game.game_over()==true)
         {
-          return
+          console.log(game.winner())
         }
-        window.setTimeout(AlphaMakeMove, 25)
+        window.setTimeout(AlphaMakeMove, 250)
     }
 
         board = Chessboard('myBoard', 'start');
-        window.setTimeout(AlphaMakeMove, 25)
+        window.setTimeout(AlphaMakeMove, 250)
 }
 
 async function makeOptimalMoveAlphaZeroTesting(model)
@@ -222,8 +244,8 @@ async function makeOptimalMoveAlphaZeroTesting(model)
   {
     var bestMove = output.move
     game.ugly_move(bestMove);
-    board.position(game.fen());
-    renderMoveHistory(game.history());
+    // board.position(game.fen()); removed for now because the board only updates once the games are doen anyways so no point (viewer arena still depends on these lines though)
+    // renderMoveHistory(game.history());
   }
 }
 
@@ -673,6 +695,8 @@ function AIvsAI()
     async function oldtest()
     {
         var matchScore = 0;
+        var challengerScore = 0
+        var bestNNScore = 0
         for(var l = 0; l < 2; l++)
         {
             game.reset()
@@ -680,64 +704,84 @@ function AIvsAI()
             const competitor = await loadModel('model_number_' + 0) 
             if(l % 2 == 0)
             {
-                viewerArena(bestModel, competitor)
+                await ArenaGame(bestModel, competitor)
                 switch(game.winner()) {
                     case 1:
                         matchScore+=1
+                        bestNNScore+=1
                         console.log('the bestNN won as white')
                       break;
                     case 0:
                         matchScore-=1
+                        challengerScore+=1
                         console.log('Competitor ' + 0 + ' won as black')
                       break;
                     case -1:
+                        bestNNScore+=.5
+                        challengerScore+=.5
                         matchScore+=0
                         console.log('Competitor ' + 0 + ' drew as black')
                       break;
                       case -2:
+                        bestNNScore+=.5
+                        challengerScore+=.5
                         matchScore+=0
                         console.log('Competitor ' + 0 + ' drew as black')
                       break;
                       case -3:
+                        bestNNScore+=.5
+                        challengerScore+=.5
                         matchScore+=0
                         console.log('Competitor ' + 0 + ' drew as black')
                       break;
                       case -4:
+                        bestNNScore+=.5
+                        challengerScore+=.5
                         matchScore+=0
                         console.log('Competitor ' + 0 + ' drew as black')
                       break;
                   }
             }
             else{
-                viewerArena(competitor, bestModel)
+                await ArenaGame(competitor, bestModel)
                 switch(game.winner()) {
                     case 1:
                         matchScore-=1
+                        challengerScore+=1
                         console.log('Competitor ' + 0 + ' won as white')
                       break;
                     case 0:
                         matchScore+=1
+                        bestNNScore+=1
                         console.log('the bestNN won as black')
                       break;
                     case -1:
+                        bestNNScore+=.5
+                        challengerScore+=.5
                         matchScore+=0
                         console.log('Competitor ' + 0 + ' drew as white')
                       break;
                       case -2:
+                        bestNNScore+=.5
+                        challengerScore+=.5
                         matchScore+=0
                         console.log('Competitor ' + 0 + ' drew as white')
                       break;
                       case -3:
+                        bestNNScore+=.5
+                        challengerScore+=.5
                         matchScore+=0
                         console.log('Competitor ' + 0 + ' drew as white')
                       break;
                       case -4:
+                        bestNNScore+=.5
+                        challengerScore+=.5
                         matchScore+=0
                         console.log('Competitor ' + 0 + ' drew as white')
                       break;
                   }
             }
-            console.log('Competitor ' + 0 + ' vs bestNN match score is ' + matchScore)
+            console.log('Competitor ' + 0 + ' vs bestNN match score is bestNN- ' + bestNNScore + 'Competitor ' + 0 + '- ' + challengerScore)
         }
         if(matchScore < 0)
         {
@@ -750,8 +794,30 @@ function AIvsAI()
     {
       const bestModel = await loadModel('bestModel')
       const competitor = await loadModel('model_number_' + 0) 
-      await viewerArena(bestModel, competitor)
+      board = Chessboard('myBoard', 'start');
+      await ArenaGame(bestModel, competitor)
+      console.log(game.winner())
+    }
 
+    async function ArenaGame(P1Model, P2Model)
+    {
+ 
+      if(WorB)
+      {
+          await makeOptimalMoveAlphaZeroTesting(P1Model);     
+      }
+      else{
+          await makeOptimalMoveAlphaZeroTesting(P2Model);    
+      }
+      WorB = !WorB;
 
+      if(game.game_over() == true)
+      {
         console.log(game.winner())
+        result = game.winner()
+      }
+      else
+      {
+        await ArenaGame(P1Model, P2Model)
+      }
     }
